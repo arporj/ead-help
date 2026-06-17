@@ -52,7 +52,7 @@ export const StudentDashboard: React.FC = () => {
           {/* Simulated document pages content */}
           <div className="bg-white text-gray-800 rounded-xl p-8 shadow-inner font-serif min-h-[350px] leading-relaxed space-y-4 select-none">
             <div className="text-center pb-4 border-b border-gray-200">
-              <span className="text-[10px] font-sans font-bold text-brand-medium tracking-widest block uppercase">Documento Oficial de Estudos EAD Help</span>
+              <span className="text-[10px] font-sans font-bold text-brand-medium tracking-widest block uppercase">Documento Oficial de Estudos Help EAD</span>
               <h1 className="text-xl font-bold text-gray-900 mt-1">{readingSummary.title}</h1>
             </div>
             
