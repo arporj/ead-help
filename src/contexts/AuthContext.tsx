@@ -18,6 +18,8 @@ interface AuthContextType {
   toggleAiAccess: (studentId: string) => void;
   addQuestion: (question: Omit<Question, 'id'>) => void;
   addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>) => void;
+  addCourse: (name: string) => void;
+  addSubject: (name: string, courseId: string, semester: number) => void;
   addAiFile: (fileName: string, fileSize: string) => void;
   removeAiFile: (id: string) => void;
   sendSupportMessage: (message: string) => void;
@@ -210,6 +212,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ];
   });
 
+  const [courses, setCourses] = useState<Course[]>(() => {
+    const saved = localStorage.getItem('eh_courses');
+    return saved ? JSON.parse(saved) : INITIAL_COURSES;
+  });
+
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const saved = localStorage.getItem('eh_subjects');
+    return saved ? JSON.parse(saved) : INITIAL_SUBJECTS;
+  });
+
   const [summaries, setSummaries] = useState<Summary[]>(() => {
     const saved = localStorage.getItem('eh_summaries');
     return saved ? JSON.parse(saved) : INITIAL_SUMMARIES;
@@ -244,6 +256,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('eh_students', JSON.stringify(students));
   }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('eh_courses', JSON.stringify(courses));
+  }, [courses]);
+
+  useEffect(() => {
+    localStorage.setItem('eh_subjects', JSON.stringify(subjects));
+  }, [subjects]);
 
   useEffect(() => {
     localStorage.setItem('eh_summaries', JSON.stringify(summaries));
@@ -350,6 +370,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSummaries(prev => [...prev, newSummary]);
   };
 
+  const addCourse = (name: string) => {
+    const newCourse: Course = {
+      id: `c-${Date.now()}`,
+      name
+    };
+    setCourses(prev => [...prev, newCourse]);
+  };
+
+  const addSubject = (name: string, courseId: string, semester: number) => {
+    const newSubject: Subject = {
+      id: `s-${Date.now()}`,
+      courseId,
+      name,
+      semester
+    };
+    setSubjects(prev => [...prev, newSubject]);
+  };
+
   const addAiFile = (fileName: string, fileSize: string) => {
     const newFile: AIKnowledgeFile = {
       id: `file-${Date.now()}`,
@@ -422,8 +460,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         studentProfile,
         students,
-        courses: INITIAL_COURSES,
-        subjects: INITIAL_SUBJECTS,
+        courses,
+        subjects,
         summaries,
         questions,
         supportMessages,
@@ -435,6 +473,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleAiAccess,
         addQuestion,
         addSummary,
+        addCourse,
+        addSubject,
         addAiFile,
         removeAiFile,
         sendSupportMessage,
