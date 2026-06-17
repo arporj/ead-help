@@ -9,37 +9,53 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setError('Por favor, informe seu e-mail.');
       return;
     }
 
-    // Direct mapping to make email input feel working
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail.includes('admin')) {
-      loginAs('admin');
-      navigate('/admin');
-    } else if (cleanEmail.includes('maria') || cleanEmail.includes('pro')) {
-      loginAs('pro');
-      navigate('/student');
-    } else if (cleanEmail.includes('carlos') || cleanEmail.includes('prem')) {
-      loginAs('premium');
-      navigate('/student');
-    } else {
-      // Default to basic user
-      loginAs('basic');
-      navigate('/student');
+    setLoading(true);
+    setError('');
+    try {
+      if (cleanEmail.includes('admin')) {
+        await loginAs('admin');
+        navigate('/admin');
+      } else if (cleanEmail.includes('maria') || cleanEmail.includes('pro')) {
+        await loginAs('pro');
+        navigate('/student');
+      } else if (cleanEmail.includes('carlos') || cleanEmail.includes('prem')) {
+        await loginAs('premium');
+        navigate('/student');
+      } else {
+        await loginAs('basic');
+        navigate('/student');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro inesperado ao realizar login.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleQuickLogin = (role: 'admin' | 'basic' | 'pro' | 'premium') => {
-    loginAs(role);
-    if (role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/student');
+  const handleQuickLogin = async (role: 'admin' | 'basic' | 'pro' | 'premium') => {
+    setLoading(true);
+    setError('');
+    try {
+      await loginAs(role);
+      if (role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/student');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro ao realizar login rápido.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,18 +88,20 @@ export const Login: React.FC = () => {
             </label>
             <input 
               type="email"
+              disabled={loading}
               placeholder="ex: joao@email.com ou admin@eadhelp.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500"
+              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
             />
           </div>
 
           <button 
             type="submit"
-            className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-brand-light/5 group"
+            disabled={loading}
+            className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-brand-light/5 group disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Entrar no Portal
+            {loading ? 'Entrando no Portal...' : 'Entrar no Portal'}
             <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </form>
@@ -97,7 +115,8 @@ export const Login: React.FC = () => {
         <div className="space-y-2">
           <button 
             onClick={() => handleQuickLogin('basic')}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all"
+            disabled={loading}
+            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="flex items-center gap-2">
               <User size={14} className="text-brand-light" />
@@ -108,7 +127,8 @@ export const Login: React.FC = () => {
 
           <button 
             onClick={() => handleQuickLogin('pro')}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all"
+            disabled={loading}
+            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="flex items-center gap-2">
               <User size={14} className="text-brand-light animate-pulse" />
@@ -119,7 +139,8 @@ export const Login: React.FC = () => {
 
           <button 
             onClick={() => handleQuickLogin('premium')}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all"
+            disabled={loading}
+            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="flex items-center gap-2">
               <User size={14} className="text-brand-light" />
@@ -130,7 +151,8 @@ export const Login: React.FC = () => {
 
           <button 
             onClick={() => handleQuickLogin('admin')}
-            className="w-full bg-brand-medium/30 hover:bg-brand-medium text-brand-light p-2.5 rounded-xl border border-brand-light/25 text-xs font-bold flex items-center justify-between transition-all"
+            disabled={loading}
+            className="w-full bg-brand-medium/30 hover:bg-brand-medium text-brand-light p-2.5 rounded-xl border border-brand-light/25 text-xs font-bold flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="flex items-center gap-2">
               ⚙️ Painel de Administração
