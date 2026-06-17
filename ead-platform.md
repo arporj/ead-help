@@ -2,11 +2,13 @@
 
 ## Overview
 A plataforma **EAD Help** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias em PDF, quizzes interativos de simulados e provas, e o **Banco de Questões (BDQ)** - uma ferramenta onde o aluno visualiza e faz download de questões contendo apenas o enunciado e a resposta correta para estudo direcionado.
-Como diferencial tecnológico de monetização, a plataforma integra o **Consultor Jurídico via IA** - um sistema inteligente baseado em RAG que responde dúvidas de alunos com acesso comprado com base em regulamentos e diretrizes em PDF inseridos pelo administrador.
+Como diferenciais de tecnologia e engajamento, a plataforma integra:
+- **Consultor Jurídico via IA**: Sistema baseado em RAG para responder dúvidas com base em PDFs carregados pelo admin.
+- **Ranking Geral de Alunos**: Gamificação com ranking de desempenho baseado em sessões completas de 10 questões, totalmente adequado à LGPD.
 
 O sistema possui duas personas:
 - **Administrador**: Gerencia alunos, cursos, matérias, resumos (PDF), questões (cadastro manual), mensagens de suporte e a base de PDFs que alimentam a IA do Consultor Jurídico.
-- **Aluno**: Estuda através de resumos liberados, joga Quizzes interativos (gratuitos/pagos), baixa os BDQs (conforme seu plano), envia mensagens ao suporte e interage com o Consultor Jurídico via IA (se possuir acesso adquirido avulso).
+- **Aluno**: Estuda através de resumos liberados, joga Quizzes interativos em ciclos de 10 questões, visualiza o Ranking Geral (caso dê consentimento LGPD), baixa os BDQs (conforme seu plano), envia mensagens ao suporte e interage com o Consultor Jurídico via IA.
 
 ---
 
@@ -20,18 +22,20 @@ O sistema possui duas personas:
 
 ## Success Criteria
 1. **Diferenciação Quiz vs BDQ**:
-   - **Modo Quiz**: Múltipla escolha interativa com feedback de acerto/erro.
+   - **Modo Quiz**: Ciclos de 10 questões de múltipla escolha interativa com feedback de acerto/erro.
    - **Modo BDQ**: Lista limpa de questões mostrando apenas enunciado + resposta correta (sem alternativas incorretas) otimizada para download/impressão.
-2. **Consultor Jurídico via IA (RAG)**:
+2. **Ciclos de 10 Questões & Ranking**:
+   - Uma rodada de quiz sempre consiste de 10 questões.
+   - Sessões interrompidas antes de completar a décima questão não geram pontuação no ranking.
+   - Apenas alunos que deram o aceite explícito à LGPD (`lgpd_ranking_consent = true`) aparecem no Ranking Geral.
+3. **Consultor Jurídico via IA (RAG)**:
    - Respostas da IA baseadas estritamente nos PDFs de leis/diretrizes carregados pelo admin.
-   - Extensão `pgvector` indexando e buscando vetores eficientemente no PostgreSQL.
-3. **Restrição de Acesso por Planos & Compras**:
+4. **Restrição de Acesso por Planos & Compras**:
    - **Aluno Básico**: Quiz de Simulado (grátis).
    - **Aluno Pro**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado.
    - **Aluno Premium**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado, BDQ de Provas.
    - **IA / Resumos**: Liberação avulsa concedida de forma individual pelo administrador.
-4. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
-5. **Sem Bugs de Compilação**: Build de produção limpa.
+5. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
 
 ---
 
@@ -81,6 +85,7 @@ ead-help/
     │   ├── StudentBDQ.tsx
     │   ├── StudentSupport.tsx
     │   ├── StudentAIConsultant.tsx
+    │   ├── StudentRanking.tsx
     │   ├── AdminDashboard.tsx
     │   ├── AdminStudents.tsx
     │   ├── AdminContent.tsx
@@ -95,12 +100,12 @@ ead-help/
 ## Task Breakdown
 
 ### Fase 1: Fundação do Banco de Dados & Infra (Supabase)
-- **Tarefa 1.1**: Criação do esquema de banco de dados (`profiles`, `students`, `courses`, `subjects`, `summaries`, `summary_access`, `questions`, `student_answers`, `support_messages`, `ai_knowledge_files`, `ai_knowledge_chunks`, `ai_consultant_access`, `ai_conversations`, `ai_messages`).
+- **Tarefa 1.1**: Criação do esquema de banco de dados (`profiles`, `students`, `courses`, `subjects`, `summaries`, `summary_access`, `questions`, `student_answers`, `quiz_sessions`, `support_messages`, `ai_knowledge_files`, `ai_knowledge_chunks`, `ai_consultant_access`, `ai_conversations`, `ai_messages`).
   - **Agente**: `database-architect` | **Skill**: `database-design`
-  - **INPUT**: Modelo de dados atualizado com a IA.
+  - **INPUT**: Modelo de dados atualizado com ranking e IA.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000000_schema.sql`.
   - **VERIFY**: Executar validação de esquema local e ativação de `pgvector`.
-- **Tarefa 1.2**: Políticas RLS para visualização de questões, segurança dos buckets de resumos/conhecimento e isolamento do chat da IA.
+- **Tarefa 1.2**: Políticas RLS para ranking com base no consentimento LGPD, visibilidade condicional de questões e chat da IA.
   - **Agente**: `security-auditor` | **Skill**: `vulnerability-scanner`
   - **INPUT**: Regras de negócio de visibilidade.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000100_rls_policies.sql`.
@@ -151,16 +156,16 @@ ead-help/
   - **INPUT**: Matérias e resumos (PDFs) autorizados para o aluno.
   - **OUTPUT**: Listagem de matérias, exibição dos resumos disponíveis e links para baixar o PDF.
   - **VERIFY**: Apenas os resumos liberados são exibidos.
-- **Tarefa 4.2**: Área de Resolução de Quizzes Interativos (`StudentExams.tsx`).
+- **Tarefa 4.2**: Resolução de Quizzes Interativos em Rodadas de 10 Questões (`StudentExams.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
-  - **INPUT**: Banco de questões (simulado aberto e provas oficiais se Pro/Premium).
-  - **OUTPUT**: Interface interativa de perguntas, feedback instantâneo de correção e estatísticas.
-  - **VERIFY**: Aluno Básico não consegue obter questões do tipo AV/AVS.
+  - **INPUT**: Banco de questões (simulado aberto e provas oficiais se Pro/Premium) e controle de sessão `quiz_sessions`.
+  - **OUTPUT**: Interface interativa de rodada de 10 perguntas, salvamento apenas de rodadas finalizadas e tela de conclusão de rodada.
+  - **VERIFY**: Rodadas incompletas não computam pontuação.
 - **Tarefa 4.3**: Tela de Download/Visualização de Banco de Questões - BDQ (`StudentBDQ.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Tabela `questions` filtrada pelo plano e renderizada apenas com enunciado + resposta correta.
   - **OUTPUT**: Visualização limpa com botão de impressão de PDF utilizando CSS `@media print`.
-  - **VERIFY**: Aluno Básico não acessa. Aluno Pro acessa BDQ de Simulado. Aluno Premium acessa todos os BDQs.
+  - **VERIFY**: Bloqueios por plano funcionando adequadamente.
 - **Tarefa 4.4**: Tela de Suporte e Contato Direto (`StudentSupport.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Tabela `support_messages`.
@@ -170,7 +175,12 @@ ead-help/
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Verificação da tabela `ai_consultant_access` e Edge Function `chat-ai`.
   - **OUTPUT**: Interface de chat com streaming/digitação para alunos com acesso comprado; banner promocional de vendas para os demais.
-  - **VERIFY**: Teste do fluxo promocional e fluxo de chat embasado em arquivos.
+  - **VERIFY**: Teste do fluxo promocional e chat de IA funcional.
+- **Tarefa 4.6**: Ranking Geral de Alunos com Consentimento LGPD (`StudentRanking.tsx`).
+  - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
+  - **INPUT**: Dados consolidados de `quiz_sessions` de perfis com `lgpd_ranking_consent = true`.
+  - **OUTPUT**: Tabela de liderança geral, botão/modal de consentimento e termos da LGPD.
+  - **VERIFY**: Alunos sem consentimento ficam fora do ranking.
 
 ---
 
