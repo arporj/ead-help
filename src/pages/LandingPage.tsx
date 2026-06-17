@@ -258,7 +258,7 @@ export const LandingPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full bg-brand-dark border-t border-brand-medium/30 py-8 px-4 text-center text-xs text-gray-400 mt-auto">
-        <p>&copy; {new Date().getFullYear()} EAD Help - Todos os direitos reservados.</p>
+        <p>&copy; {new Date().getFullYear()} Help EAD - Todos os direitos reservados.</p>
         <p className="mt-2 text-brand-light/75">Desenvolvido com foco em alta performance e gamificação de estudos.</p>
       </footer>
     </div>
