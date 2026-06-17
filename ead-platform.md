@@ -1,7 +1,7 @@
-# Plano do Projeto - EAD Help Platform
+# Plano do Projeto - Help EAD Platform
 
 ## Overview
-A plataforma **EAD Help** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias em PDF, quizzes interativos de simulados e provas, e o **Banco de Questões (BDQ)** - uma ferramenta onde o aluno visualiza e faz download de questões contendo apenas o enunciado e a resposta correta para estudo direcionado.
+A plataforma **Help EAD** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias em PDF, quizzes interativos de simulados e provas, e o **Banco de Questões (BDQ)** - uma ferramenta onde o aluno visualiza e faz download de questões contendo apenas o enunciado e a resposta correta para estudo direcionado.
 Como diferenciais de tecnologia e engajamento, a plataforma integra:
 - **Consultor Jurídico via IA**: Sistema baseado em RAG para responder dúvidas com base em PDFs carregados pelo admin.
 - **Ranking Geral de Alunos**: Gamificação com ranking de desempenho baseado em sessões completas de 10 questões, totalmente adequado à LGPD.
@@ -49,7 +49,7 @@ O sistema possui duas personas:
 
 ## File Structure
 ```text
-ead-help/
+help-ead/
 ├── .agent/
 ├── .git/
 ├── .gitignore
