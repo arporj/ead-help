@@ -19,6 +19,7 @@ import { AdminStudents } from './pages/AdminStudents';
 import { AdminContent } from './pages/AdminContent';
 import { AdminQuestions } from './pages/AdminQuestions';
 import { AdminAIKnowledge } from './pages/AdminAIKnowledge';
+import { AdminUsers } from './pages/AdminUsers';
 
 const App: React.FC = () => {
   return (
@@ -138,6 +139,16 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRole="admin">
                 <Layout>
                   <AdminAIKnowledge />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute allowedRole="admin">
+                <Layout>
+                  <AdminUsers />
                 </Layout>
               </ProtectedRoute>
             } 
