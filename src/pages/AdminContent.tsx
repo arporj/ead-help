@@ -26,6 +26,21 @@ export const AdminContent: React.FC = () => {
   const [subjectCourseId, setSubjectCourseId] = useState(courses[0]?.id || '');
   const [subjectSemester, setSubjectSemester] = useState(1);
 
+  // Filter States for Published Summaries
+  const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const filteredSummaries = summaries.filter(sum => {
+    if (filterSubjectId !== 'all' && sum.subjectId !== filterSubjectId) return false;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = sum.title.toLowerCase().includes(query);
+      const descMatch = sum.description.toLowerCase().includes(query);
+      if (!titleMatch && !descMatch) return false;
+    }
+    return true;
+  });
+
   // Handlers
   const handleCreateSummary = (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,40 +359,70 @@ export const AdminContent: React.FC = () => {
 
           {/* List View 1: Summaries */}
           {rightTab === 'summaries' && (
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-              {summaries.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 text-xs">
-                  Nenhum resumo publicado ainda.
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Filter Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 bg-brand-dark/25 p-3 rounded-xl border border-brand-medium/40 shrink-0">
+                <div>
+                  <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Busca Textual</label>
+                  <input
+                    type="text"
+                    placeholder="Buscar no título ou descrição..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
+                  />
                 </div>
-              ) : (
-                summaries.map(sum => {
-                  const subject = subjects.find(s => s.id === sum.subjectId);
-                  const course = subject ? courses.find(c => c.id === subject.courseId) : null;
+                <div>
+                  <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Filtrar por Disciplina</label>
+                  <select
+                    value={filterSubjectId}
+                    onChange={(e) => setFilterSubjectId(e.target.value)}
+                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+                  >
+                    <option value="all">Todas as Disciplinas</option>
+                    {subjects.map(sub => (
+                      <option key={sub.id} value={sub.id}>{sub.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-                  return (
-                    <div key={sum.id} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-xs text-white">{sum.title}</h4>
-                          {sum.isPremium ? (
-                            <span className="text-[8px] bg-yellow-600/35 text-yellow-350 border border-yellow-500/20 px-2 py-0.5 rounded-full font-bold">
-                              PREMIUM
-                            </span>
-                          ) : (
-                            <span className="text-[8px] bg-brand-medium text-brand-light border border-brand-light/10 px-2 py-0.5 rounded-full font-bold">
-                              LIVRE
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-gray-455 line-clamp-2 leading-relaxed">{sum.description}</p>
-                        <div className="text-[9px] text-brand-light font-medium pt-1">
-                          {course?.name || 'Curso Não Identificado'} &bull; {subject?.name || 'Matéria Deletada'} {subject ? `(Semestre ${subject.semester})` : ''}
+              {/* Summaries scrollable list */}
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {filteredSummaries.length === 0 ? (
+                  <div className="text-center py-12 text-gray-550 text-xs">
+                    Nenhum resumo encontrado com os filtros aplicados.
+                  </div>
+                ) : (
+                  filteredSummaries.map(sum => {
+                    const subject = subjects.find(s => s.id === sum.subjectId);
+                    const course = subject ? courses.find(c => c.id === subject.courseId) : null;
+
+                    return (
+                      <div key={sum.id} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-xs text-white">{sum.title}</h4>
+                            {sum.isPremium ? (
+                              <span className="text-[8px] bg-yellow-600/35 text-yellow-350 border border-yellow-500/20 px-2 py-0.5 rounded-full font-bold">
+                                PREMIUM
+                              </span>
+                            ) : (
+                              <span className="text-[8px] bg-brand-medium text-brand-light border border-brand-light/10 px-2 py-0.5 rounded-full font-bold">
+                                LIVRE
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-455 line-clamp-2 leading-relaxed">{sum.description}</p>
+                          <div className="text-[9px] text-brand-light font-medium pt-1">
+                            {course?.name || 'Curso Não Identificado'} &bull; {subject?.name || 'Matéria Deletada'} {subject ? `(Semestre ${subject.semester})` : ''}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
 
