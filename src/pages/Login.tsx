@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BrainCircuit, ShieldAlert, ArrowRight, User } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
   const { loginAs } = useAuth();
