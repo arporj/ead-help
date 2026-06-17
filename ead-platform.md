@@ -2,10 +2,11 @@
 
 ## Overview
 A plataforma **EAD Help** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias em PDF, quizzes interativos de simulados e provas, e o **Banco de Questões (BDQ)** - uma ferramenta onde o aluno visualiza e faz download de questões contendo apenas o enunciado e a resposta correta para estudo direcionado.
+Como diferencial tecnológico de monetização, a plataforma integra o **Consultor Jurídico via IA** - um sistema inteligente baseado em RAG que responde dúvidas de alunos com acesso comprado com base em regulamentos e diretrizes em PDF inseridos pelo administrador.
 
 O sistema possui duas personas:
-- **Administrador**: Gerencia alunos, cursos, matérias, resumos (PDF), questões (cadastro manual) e responde às mensagens de suporte.
-- **Aluno**: Estuda através de resumos liberados, joga Quizzes interativos (gratuitos/pagos), baixa os BDQs (conforme seu plano) e envia mensagens ao suporte.
+- **Administrador**: Gerencia alunos, cursos, matérias, resumos (PDF), questões (cadastro manual), mensagens de suporte e a base de PDFs que alimentam a IA do Consultor Jurídico.
+- **Aluno**: Estuda através de resumos liberados, joga Quizzes interativos (gratuitos/pagos), baixa os BDQs (conforme seu plano), envia mensagens ao suporte e interage com o Consultor Jurídico via IA (se possuir acesso adquirido avulso).
 
 ---
 
@@ -21,20 +22,23 @@ O sistema possui duas personas:
 1. **Diferenciação Quiz vs BDQ**:
    - **Modo Quiz**: Múltipla escolha interativa com feedback de acerto/erro.
    - **Modo BDQ**: Lista limpa de questões mostrando apenas enunciado + resposta correta (sem alternativas incorretas) otimizada para download/impressão.
-2. **Cadastro Estável de Questões**: Cadastro manual e robusto pelo administrador, garantindo confiabilidade nos dados do quiz.
-3. **Restrição de Acesso por Planos**:
+2. **Consultor Jurídico via IA (RAG)**:
+   - Respostas da IA baseadas estritamente nos PDFs de leis/diretrizes carregados pelo admin.
+   - Extensão `pgvector` indexando e buscando vetores eficientemente no PostgreSQL.
+3. **Restrição de Acesso por Planos & Compras**:
    - **Aluno Básico**: Quiz de Simulado (grátis).
    - **Aluno Pro**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado.
    - **Aluno Premium**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado, BDQ de Provas.
-4. **Resumos (PDFs)**: Liberação individual realizada pelo administrador, com arquivos armazenados no Supabase Storage.
-5. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
-6. **Sem Bugs de Compilação**: Build de produção limpa.
+   - **IA / Resumos**: Liberação avulsa concedida de forma individual pelo administrador.
+4. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
+5. **Sem Bugs de Compilação**: Build de produção limpa.
 
 ---
 
 ## Tech Stack
 - **Frontend**: React (Vite) + TypeScript + Tailwind CSS Puro
-- **Banco de Dados & Autenticação**: Supabase (PostgreSQL, RLS, Storage para resumos físicos em PDF)
+- **Banco de Dados & Autenticação**: Supabase (PostgreSQL com extensão `vector`, RLS, Storage para PDFs de resumos e base da IA)
+- **Edge Functions**: Deno + TypeScript para processamento RAG (ingestão e chat com Gemini API)
 - **Roteamento & Estado**: React Router DOM (v6), Context API.
 
 ---
@@ -52,6 +56,11 @@ ead-help/
 ├── postcss.config.js
 ├── tailwind.config.js
 ├── supabase/
+│   ├── functions/
+│   │   ├── ingest-knowledge/
+│   │   │   └── index.ts
+│   │   └── chat-ai/
+│   │       └── index.ts
 │   └── migrations/
 │       ├── 20260617000000_schema.sql
 │       └── 20260617000100_rls_policies.sql
@@ -71,10 +80,12 @@ ead-help/
     │   ├── StudentExams.tsx
     │   ├── StudentBDQ.tsx
     │   ├── StudentSupport.tsx
+    │   ├── StudentAIConsultant.tsx
     │   ├── AdminDashboard.tsx
     │   ├── AdminStudents.tsx
     │   ├── AdminContent.tsx
-    │   └── AdminQuestions.tsx
+    │   ├── AdminQuestions.tsx
+    │   └── AdminAIKnowledge.tsx
     └── types/
         └── index.ts
 ```
@@ -84,12 +95,12 @@ ead-help/
 ## Task Breakdown
 
 ### Fase 1: Fundação do Banco de Dados & Infra (Supabase)
-- **Tarefa 1.1**: Criação do esquema de banco de dados (`profiles`, `students`, `courses`, `subjects`, `summaries`, `summary_access`, `questions`, `student_answers`, `support_messages`).
+- **Tarefa 1.1**: Criação do esquema de banco de dados (`profiles`, `students`, `courses`, `subjects`, `summaries`, `summary_access`, `questions`, `student_answers`, `support_messages`, `ai_knowledge_files`, `ai_knowledge_chunks`, `ai_consultant_access`, `ai_conversations`, `ai_messages`).
   - **Agente**: `database-architect` | **Skill**: `database-design`
-  - **INPUT**: Modelo de dados atualizado.
+  - **INPUT**: Modelo de dados atualizado com a IA.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000000_schema.sql`.
-  - **VERIFY**: Executar validação de esquema local.
-- **Tarefa 1.2**: Políticas RLS para visualização condicional de questões (Simulado vs Prova) e segurança de PDFs.
+  - **VERIFY**: Executar validação de esquema local e ativação de `pgvector`.
+- **Tarefa 1.2**: Políticas RLS para visualização de questões, segurança dos buckets de resumos/conhecimento e isolamento do chat da IA.
   - **Agente**: `security-auditor` | **Skill**: `vulnerability-scanner`
   - **INPUT**: Regras de negócio de visibilidade.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000100_rls_policies.sql`.
@@ -113,11 +124,11 @@ ead-help/
   - **INPUT**: `AuthContext` e `Layout.tsx`.
   - **OUTPUT**: Visualização de métricas e navegação exclusiva.
   - **VERIFY**: Usuários sem permissão administrativa são bloqueados.
-- **Tarefa 3.2**: Tela de Gestão de Alunos e Concessão de Permissões de Resumo (`AdminStudents.tsx`).
+- **Tarefa 3.2**: Tela de Gestão de Alunos, Permissões de Resumo e Liberação da IA (`AdminStudents.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
-  - **INPUT**: Tabelas de perfis, alunos e permissões.
-  - **OUTPUT**: Lista de alunos, cadastro manual, controle de plano e formulário de liberação de PDFs.
-  - **VERIFY**: Gravação de acesso individual a resumos com sucesso.
+  - **INPUT**: Tabelas de perfis, alunos, permissões e acessos à IA.
+  - **OUTPUT**: Lista de alunos, controle de plano, liberação de PDFs e chave do consultor IA.
+  - **VERIFY**: Gravação de acessos com sucesso.
 - **Tarefa 3.3**: Cadastro de Cursos, Matérias e Resumos (PDFs) (`AdminContent.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Tabelas de cursos, matérias e resumos + bucket do Supabase Storage.
@@ -128,6 +139,11 @@ ead-help/
   - **INPUT**: Tabela `questions`.
   - **OUTPUT**: Formulário com campos de enunciado, nível (plano), tipo (Simulado/AV/AVS) e opções dinâmicas.
   - **VERIFY**: Inserção no banco de dados com array JSON de opções e resposta correta.
+- **Tarefa 3.5**: Cadastro da Base de Conhecimento da IA (`AdminAIKnowledge.tsx`).
+  - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
+  - **INPUT**: Bucket do Supabase Storage e Edge Function `ingest-knowledge`.
+  - **OUTPUT**: Tela de upload de PDFs legais, indexação dos arquivos e remoção.
+  - **VERIFY**: Indexador dispara com sucesso ao subir o arquivo e preenche tabela de vetores.
 
 ### Fase 4: Área do Aluno (Student Pages)
 - **Tarefa 4.1**: Painel do Aluno e Visualização de Resumos (`StudentDashboard.tsx`).
@@ -150,6 +166,11 @@ ead-help/
   - **INPUT**: Tabela `support_messages`.
   - **OUTPUT**: Histórico de chamados enviados, campo para enviar novas mensagens e exibição das respostas do administrador.
   - **VERIFY**: Envio de mensagens e respostas funcionando adequadamente.
+- **Tarefa 4.5**: Chat com o Consultor Jurídico via IA (`StudentAIConsultant.tsx`).
+  - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
+  - **INPUT**: Verificação da tabela `ai_consultant_access` e Edge Function `chat-ai`.
+  - **OUTPUT**: Interface de chat com streaming/digitação para alunos com acesso comprado; banner promocional de vendas para os demais.
+  - **VERIFY**: Teste do fluxo promocional e fluxo de chat embasado em arquivos.
 
 ---
 
