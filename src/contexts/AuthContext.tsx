@@ -361,43 +361,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const password = 'TestPassword123!';
 
     // Tentar login
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      // Se não existir, cadastramos
-      if (error.message.includes('Invalid login credentials') || error.message.includes('User not found')) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name,
-            }
-          }
-        });
-
-        if (signUpError) throw signUpError;
-
-        // Fazer login logo em seguida
-        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInErr) throw signInErr;
-
-        // Se for estudante, atualizar o plano (o trigger coloca como 'basic' por padrão)
-        if (role !== 'admin' && role !== 'basic' && signInData.user) {
-          await supabase
-            .from('students')
-            .update({ plan: role })
-            .eq('id', signInData.user.id);
+      if (error) {
+        if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
+          throw new Error('Confirmação de e-mail pendente no Supabase. Para corrigir: no painel do Supabase, acesse "Authentication" -> "Providers" -> "Email" e desmarque a opção "Confirm email" para permitir login sem confirmação real.');
         }
-      } else {
-        throw error;
+
+        // Se não existir, cadastramos
+        if (error.message.includes('Invalid login credentials') || error.message.includes('User not found')) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                full_name: name,
+              }
+            }
+          });
+
+          if (signUpError) {
+            if (signUpError.message.includes('Email not confirmed') || signUpError.message.includes('email_not_confirmed')) {
+              throw new Error('Confirmação de e-mail pendente no Supabase. Para corrigir: no painel do Supabase, acesse "Authentication" -> "Providers" -> "Email" e desmarque a opção "Confirm email" para permitir login sem confirmação real.');
+            }
+            throw signUpError;
+          }
+
+          // Fazer login logo em seguida
+          const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInErr) {
+            if (signInErr.message.includes('Email not confirmed') || signInErr.message.includes('email_not_confirmed')) {
+              throw new Error('Confirmação de e-mail pendente no Supabase. Para corrigir: no painel do Supabase, acesse "Authentication" -> "Providers" -> "Email" e desmarque a opção "Confirm email" para permitir login sem confirmação real.');
+            }
+            throw signInErr;
+          }
+
+          // Se for estudante, atualizar o plano (o trigger coloca como 'basic' por padrão)
+          if (role !== 'admin' && role !== 'basic' && signInData.user) {
+            await supabase
+              .from('students')
+              .update({ plan: role })
+              .eq('id', signInData.user.id);
+          }
+        } else {
+          throw error;
+        }
+      } else if (data.user && role !== 'admin') {
+        // Se já existia, garantir que o plano no banco bata com a simulação do botão
+        await supabase
+          .from('students')
+          .update({ plan: role })
+          .eq('id', data.user.id);
       }
-    } else if (data.user && role !== 'admin') {
-      // Se já existia, garantir que o plano no banco bata com a simulação do botão
-      await supabase
-        .from('students')
-        .update({ plan: role })
-        .eq('id', data.user.id);
+    } catch (err: any) {
+      if (err.message && (err.message.includes('Email not confirmed') || err.message.includes('email_not_confirmed'))) {
+        throw new Error('Confirmação de e-mail pendente no Supabase. Para corrigir: no painel do Supabase, acesse "Authentication" -> "Providers" -> "Email" e desmarque a opção "Confirm email" para permitir login sem confirmação real.');
+      }
+      throw err;
     }
   };
 
