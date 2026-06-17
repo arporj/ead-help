@@ -99,7 +99,7 @@ export const StudentAIConsultant: React.FC = () => {
               <Sparkles size={12} className="text-yellow-400" /> Vantagens do Consultor IA:
             </span>
             <ul className="list-disc pl-4 space-y-1 text-[11px]">
-              <li>Respostas em tempo real 24/7 sobre as matérias.</li>
+              <li>Respostas em tempo real 24/7 sobre as disciplinas.</li>
               <li>Fundamentado nas leis e livros específicos do seu curso.</li>
               <li>Explicações simplificadas e exemplos práticos dirigidos.</li>
             </ul>
