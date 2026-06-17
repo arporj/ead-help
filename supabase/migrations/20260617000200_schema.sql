@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.subjects (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     course_id uuid REFERENCES public.courses(id) ON DELETE CASCADE NOT NULL,
     name text NOT NULL,
+    semester integer NOT NULL DEFAULT 1,
     description text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS public.summaries (
     title text NOT NULL,
     description text,
     pdf_url text NOT NULL,
-    is_free boolean NOT NULL DEFAULT false,
+    is_premium boolean NOT NULL DEFAULT false,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -78,11 +79,11 @@ ALTER TABLE public.summary_access ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.questions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     subject_id uuid REFERENCES public.subjects(id) ON DELETE CASCADE NOT NULL,
-    text text NOT NULL,
+    prompt text NOT NULL,
     type text NOT NULL CHECK (type IN ('simulado', 'prova')) DEFAULT 'simulado',
-    difficulty text NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')) DEFAULT 'medium',
+    is_pro_or_premium boolean NOT NULL DEFAULT false,
     options jsonb NOT NULL, -- Array de strings das opções (múltipla escolha)
-    correct_option_index integer NOT NULL,
+    correct_answer_index integer NOT NULL,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -121,8 +122,8 @@ ALTER TABLE public.student_answers ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.support_messages (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     student_id uuid REFERENCES public.students(id) ON DELETE CASCADE NOT NULL,
-    sender_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     message text NOT NULL,
+    response text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
