@@ -41,7 +41,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-white">Painel do Administrador</h2>
-        <p className="text-gray-400 text-xs mt-1">Gerenciamento operacional e suporte aos alunos do EAD Help.</p>
+        <p className="text-gray-400 text-xs mt-1">Gerenciamento operacional e suporte aos alunos do Help EAD.</p>
       </div>
 
       {/* Metrics Cards */}
