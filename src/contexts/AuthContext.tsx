@@ -13,7 +13,7 @@ interface AuthContextType {
   supportMessages: SupportMessage[];
   aiKnowledgeFiles: AIKnowledgeFile[];
   systemUsers: SystemUser[];
-  loginAs: (role: 'admin' | 'basic' | 'pro' | 'premium') => Promise<void>;
+  loginAs: (roleOrEmail: string) => Promise<void>;
   logout: () => Promise<void>;
   updateStudentPlan: (studentId: string, plan: 'basic' | 'pro' | 'premium') => Promise<void>;
   toggleSummaryAccess: (studentId: string, summaryId: string) => Promise<void>;
@@ -340,22 +340,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Login de simulação adaptado ao Supabase
-  const loginAs = async (role: 'admin' | 'basic' | 'pro' | 'premium') => {
+  const loginAs = async (roleOrEmail: string) => {
     let email = '';
     let name = '';
+    let isPredefinedRole = true;
 
-    if (role === 'admin') {
-      email = 'admin@helpead.com';
-      name = 'Administrador Help EAD';
-    } else if (role === 'basic') {
+    if (roleOrEmail === 'admin') {
+      email = 'admin@eadhelp.com';
+      name = 'Administrador EAD Help';
+    } else if (roleOrEmail === 'basic') {
       email = 'joao@email.com';
       name = 'João Silva';
-    } else if (role === 'pro') {
+    } else if (roleOrEmail === 'pro') {
       email = 'maria@email.com';
       name = 'Maria Santos';
-    } else if (role === 'premium') {
+    } else if (roleOrEmail === 'premium') {
       email = 'carlos@email.com';
       name = 'Carlos Oliveira';
+    } else {
+      // E-mail real arbitrário digitado
+      email = roleOrEmail.trim().toLowerCase();
+      name = email.split('@')[0];
+      isPredefinedRole = false;
     }
 
     const password = 'TestPassword123!';
@@ -397,21 +403,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw signInErr;
           }
 
-          // Se for estudante, atualizar o plano (o trigger coloca como 'basic' por padrão)
-          if (role !== 'admin' && role !== 'basic' && signInData.user) {
+          // Se for estudante e role predefinida de plano, atualizar o plano
+          if (isPredefinedRole && roleOrEmail !== 'admin' && roleOrEmail !== 'basic' && signInData.user) {
             await supabase
               .from('students')
-              .update({ plan: role })
+              .update({ plan: roleOrEmail })
               .eq('id', signInData.user.id);
           }
         } else {
           throw error;
         }
-      } else if (data.user && role !== 'admin') {
+      } else if (data.user && isPredefinedRole && roleOrEmail !== 'admin') {
         // Se já existia, garantir que o plano no banco bata com a simulação do botão
         await supabase
           .from('students')
-          .update({ plan: role })
+          .update({ plan: roleOrEmail })
           .eq('id', data.user.id);
       }
     } catch (err: any) {
