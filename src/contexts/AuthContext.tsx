@@ -246,7 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from('system_users')
           .select('is_supra')
           .eq('id', suUser.id)
-          .single();
+          .maybeSingle();
         if (adminInfo) {
           isSupra = adminInfo.is_supra;
         }
@@ -298,7 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('ai_consultant_access')
             .select('*')
             .eq('student_id', suUser.id)
-            .single();
+            .maybeSingle();
           const aiConsultantAccess = !!aiAccess;
 
           setStudentProfile({
@@ -442,7 +442,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .select('*')
       .eq('student_id', studentId)
       .eq('summary_id', summaryId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await supabase
@@ -484,7 +484,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('ai_consultant_access')
       .select('*')
       .eq('student_id', studentId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await supabase
@@ -589,7 +589,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('system_users')
         .select('id')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
       if (existing && existing.id) {
         // Rebaixar o perfil para estudante em profiles
