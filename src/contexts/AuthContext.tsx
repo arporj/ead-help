@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile } from '../types';
+import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile, SystemUser } from '../types';
 import { supabase } from '../lib/supabaseClient';
 
 interface AuthContextType {
@@ -12,6 +12,7 @@ interface AuthContextType {
   questions: Question[];
   supportMessages: SupportMessage[];
   aiKnowledgeFiles: AIKnowledgeFile[];
+  systemUsers: SystemUser[];
   loginAs: (role: 'admin' | 'basic' | 'pro' | 'premium') => Promise<void>;
   logout: () => Promise<void>;
   updateStudentPlan: (studentId: string, plan: 'basic' | 'pro' | 'premium') => Promise<void>;
@@ -29,6 +30,8 @@ interface AuthContextType {
   addStudentPoints: (points: number) => void;
   addExamCycle: (subjectId: string, correctAnswers: number, totalQuestions: number) => Promise<void>;
   toggleLgpdConsent: () => Promise<void>;
+  addSystemUser: (email: string, fullName: string) => Promise<void>;
+  removeSystemUser: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [questions, setQuestions] = useState<Question[]>([]);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [aiKnowledgeFiles, setAiKnowledgeFiles] = useState<AIKnowledgeFile[]>([]);
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
 
   // Carrega todos os dados do Supabase
   const loadData = async (userId: string, userRole: 'admin' | 'student') => {
@@ -134,8 +138,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Se for Admin, carregar todos os estudantes cadastrados
+      // Se for Admin, carregar todos os estudantes cadastrados e usuários de sistema
       if (userRole === 'admin') {
+        const { data: systemUsersData } = await supabase
+          .from('system_users')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (systemUsersData) {
+          setSystemUsers(systemUsersData.map(su => ({
+            email: su.email,
+            id: su.id,
+            fullName: su.full_name,
+            permissions: typeof su.permissions === 'object' && su.permissions !== null ? su.permissions as { [key: string]: boolean } : { all: true },
+            createdAt: su.created_at
+          })));
+        }
+
         const { data: allStudents } = await supabase
           .from('students')
           .select('*, profiles(email, full_name)');
@@ -515,6 +534,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
+  const addSystemUser = async (email: string, fullName: string) => {
+    const { error } = await supabase
+      .from('system_users')
+      .insert({
+        email: email.trim().toLowerCase(),
+        full_name: fullName,
+        permissions: { all: true }
+      });
+    if (error) console.error('Erro ao adicionar usuário do sistema:', error);
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const removeSystemUser = async (email: string) => {
+    try {
+      const { data: existing } = await supabase
+        .from('system_users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existing && existing.id) {
+        // Rebaixar o perfil para estudante em profiles
+        await supabase
+          .from('profiles')
+          .update({ role: 'student' })
+          .eq('id', existing.id);
+
+        // Inserir registro na tabela de estudantes
+        await supabase
+          .from('students')
+          .insert({ id: existing.id, plan: 'basic', lgpd_ranking_consent: false })
+          .onConflict('id').doNothing();
+      }
+
+      const { error } = await supabase
+        .from('system_users')
+        .delete()
+        .eq('email', email);
+
+      if (error) console.error('Erro ao remover usuário do sistema:', error);
+    } catch (e) {
+      console.error(e);
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
   // Funções do Estudante
   const sendSupportMessage = async (messageText: string) => {
     if (!user) return;
@@ -578,6 +643,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         questions,
         supportMessages,
         aiKnowledgeFiles,
+        systemUsers,
         loginAs,
         logout,
         updateStudentPlan,
@@ -594,7 +660,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         respondSupportMessage,
         addStudentPoints,
         addExamCycle,
-        toggleLgpdConsent
+        toggleLgpdConsent,
+        addSystemUser,
+        removeSystemUser
       }}
     >
       {children}
