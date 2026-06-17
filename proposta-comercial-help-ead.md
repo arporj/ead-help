@@ -1,11 +1,11 @@
-# Proposta de Escopo do Projeto: Plataforma EAD Help
+# Proposta de Escopo do Projeto: Plataforma Help EAD
 
-Esta documentação descreve, de maneira simples e objetiva, todas as funcionalidades, benefícios e o funcionamento da plataforma **EAD Help**. O objetivo deste documento é detalhar o que será entregue para que você possa revisar e aprovar o escopo do projeto.
+Esta documentação descreve, de maneira simples e objetiva, todas as funcionalidades, benefícios e o funcionamento da plataforma **Help EAD**. O objetivo deste documento é detalhar o que será entregue para que você possa revisar e aprovar o escopo do projeto.
 
 ---
 
-## 1. O que é o EAD Help?
-O **EAD Help** é um portal de estudos online desenvolvido para ajudar estudantes universitários a se prepararem de forma eficiente para provas e exames. A plataforma funciona como uma biblioteca de materiais de apoio (resumos) e um centro de treinamento prático através de exercícios e simulados interativos.
+## 1. O que é o Help EAD?
+O **Help EAD** é um portal de estudos online desenvolvido para ajudar estudantes universitários a se prepararem de forma eficiente para provas e exames. A plataforma funciona como uma biblioteca de materiais de apoio (resumos) e um centro de treinamento prático através de exercícios e simulados interativos.
 
 Além disso, ela conta com um **Consultor de Inteligência Artificial** que funciona como um tutor virtual de dúvidas jurídicas ou acadêmicas com base nos materiais oficiais da instituição, e um sistema de **Ranking Geral** gamificado para incentivar os estudos de forma saudável.
 
