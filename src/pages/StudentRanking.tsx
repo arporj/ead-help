@@ -274,7 +274,8 @@ export const StudentRanking: React.FC = () => {
                 )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {/* TAB 2: RANKING GERAL / ACUMULADO */}
           {activeTab === 'geral' && (
