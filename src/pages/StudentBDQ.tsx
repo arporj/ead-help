@@ -105,7 +105,7 @@ export const StudentBDQ: React.FC = () => {
 
       {/* Print-only Header (Visible only when Printing) */}
       <div className="hidden print:block text-black mb-8 border-b-2 border-black pb-4 text-center">
-        <h1 className="text-2xl font-extrabold tracking-tight">EAD HELP - BANCO DE QUESTÕES (BDQ)</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">HELP EAD - BANCO DE QUESTÕES (BDQ)</h1>
         <p className="text-xs font-medium mt-1">
           Plano de Acesso: {plan.toUpperCase()} &bull; Filtro: {selectedSubjectId === 'all' ? 'Todas as Disciplinas' : subjects.find(s => s.id === selectedSubjectId)?.name}
         </p>
