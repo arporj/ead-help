@@ -15,7 +15,8 @@ import {
   ShieldAlert, 
   BookMarked,
   BrainCircuit,
-  UserCheck
+  UserCheck,
+  Shield
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -43,6 +44,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { name: 'Cursos & Resumos', path: '/admin/content', icon: BookMarked },
     { name: 'Banco de Questões', path: '/admin/questions', icon: FileText },
     { name: 'Base de Conhecimento IA', path: '/admin/ai-knowledge', icon: BrainCircuit },
+    { name: 'Usuários do Sistema', path: '/admin/users', icon: Shield },
   ];
 
   const navItems = isAdmin ? adminNav : studentNav;
