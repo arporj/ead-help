@@ -70,7 +70,7 @@ export const Login: React.FC = () => {
           <div className="bg-brand-medium text-brand-light p-3 rounded-2xl border border-brand-light/20 mb-4 shadow-lg">
             <BrainCircuit className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white">Bem-vindo ao EAD Help</h2>
+          <h2 className="text-2xl font-extrabold text-white">Bem-vindo ao Help EAD</h2>
           <p className="text-gray-400 text-xs mt-1.5">Selecione uma conta de teste ou informe seu e-mail para acessar.</p>
         </div>
 
@@ -89,7 +89,7 @@ export const Login: React.FC = () => {
             <input 
               type="email"
               disabled={loading}
-              placeholder="ex: joao@email.com ou admin@eadhelp.com"
+              placeholder="ex: joao@email.com ou admin@helpead.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
               className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
