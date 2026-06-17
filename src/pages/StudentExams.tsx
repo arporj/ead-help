@@ -4,7 +4,7 @@ import type { Question } from '../types';
 import { HelpCircle, Play, AlertTriangle, CheckCircle, XCircle, ArrowRight, Award } from 'lucide-react';
 
 export const StudentExams: React.FC = () => {
-  const { studentProfile, questions, subjects, courses, addStudentPoints } = useAuth();
+  const { studentProfile, questions, subjects, courses, addExamCycle } = useAuth();
 
   // States
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -78,8 +78,8 @@ export const StudentExams: React.FC = () => {
       // Finished the 10-question cycle!
       setIsFinished(true);
       setIsExamRunning(false);
-      // Give 10 points per correct answer to the student profile
-      addStudentPoints(score * 10);
+      // Save exam cycle dynamically
+      addExamCycle(selectedSubjectId, score, 10);
     }
   };
 
