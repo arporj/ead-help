@@ -15,9 +15,13 @@ export const LandingPage: React.FC = () => {
   const { user, loginAs } = useAuth();
   const navigate = useNavigate();
 
-  const handleQuickAccess = (plan: 'basic' | 'pro' | 'premium') => {
-    loginAs(plan);
-    navigate('/student');
+  const handleQuickAccess = async (plan: 'basic' | 'pro' | 'premium') => {
+    try {
+      await loginAs(plan);
+      navigate('/student');
+    } catch (err: any) {
+      alert(err.message || 'Erro ao acessar o plano de simulação.');
+    }
   };
 
   return (
