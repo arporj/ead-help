@@ -15,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   updateStudentPlan: (studentId: string, plan: 'basic' | 'pro' | 'premium') => void;
   toggleSummaryAccess: (studentId: string, summaryId: string) => void;
+  updateStudentSummaryAccess: (studentId: string, summaryIds: string[]) => void;
   toggleAiAccess: (studentId: string) => void;
   addQuestion: (question: Omit<Question, 'id'>) => void;
   addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>) => void;
@@ -340,6 +341,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const updateStudentSummaryAccess = (studentId: string, summaryIds: string[]) => {
+    setStudents(prev => prev.map(s => {
+      if (s.user.id === studentId) {
+        const updatedProfile = { ...s.profile, summaryAccess: summaryIds };
+        if (user && user.id === studentId) {
+          setStudentProfile(updatedProfile);
+        }
+        return { ...s, profile: updatedProfile };
+      }
+      return s;
+    }));
+  };
+
   const toggleAiAccess = (studentId: string) => {
     setStudents(prev => prev.map(s => {
       if (s.user.id === studentId) {
@@ -470,6 +484,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateStudentPlan,
         toggleSummaryAccess,
+        updateStudentSummaryAccess,
         toggleAiAccess,
         addQuestion,
         addSummary,
