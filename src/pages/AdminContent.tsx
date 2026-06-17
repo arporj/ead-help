@@ -27,17 +27,43 @@ export const AdminContent: React.FC = () => {
   const [subjectSemester, setSubjectSemester] = useState(1);
 
   // Filter States for Published Summaries
-  const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
+  const [filterCourseId, setFilterCourseId] = useState<string>('all');
+  const [filterSubjectName, setFilterSubjectName] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const availableSubjectsForFilter = subjects.filter(sub => {
+    if (filterCourseId !== 'all' && sub.courseId !== filterCourseId) return false;
+    return true;
+  });
+
   const filteredSummaries = summaries.filter(sum => {
-    if (filterSubjectId !== 'all' && sum.subjectId !== filterSubjectId) return false;
+    const subject = subjects.find(s => s.id === sum.subjectId);
+    if (!subject) return false;
+
+    // Filter by Course
+    if (filterCourseId !== 'all' && subject.courseId !== filterCourseId) return false;
+
+    // Filter by Subject Name (datalist input matching)
+    if (filterSubjectName.trim()) {
+      const matchQuery = filterSubjectName.toLowerCase();
+      // First try to find exact matched subject in database
+      const exactMatch = subjects.find(s => s.name.toLowerCase() === matchQuery);
+      if (exactMatch) {
+        if (sum.subjectId !== exactMatch.id) return false;
+      } else {
+        // If not exact match, do a partial name check on the subject name
+        if (!subject.name.toLowerCase().includes(matchQuery)) return false;
+      }
+    }
+
+    // Filter by Search Query (title/description)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const titleMatch = sum.title.toLowerCase().includes(query);
       const descMatch = sum.description.toLowerCase().includes(query);
       if (!titleMatch && !descMatch) return false;
     }
+
     return true;
   });
 
@@ -361,29 +387,53 @@ export const AdminContent: React.FC = () => {
           {rightTab === 'summaries' && (
             <div className="flex-1 flex flex-col min-h-0">
               {/* Filter Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 bg-brand-dark/25 p-3 rounded-xl border border-brand-medium/40 shrink-0">
+              <div className="space-y-3 mb-4 bg-brand-dark/25 p-3 rounded-xl border border-brand-medium/40 shrink-0">
+                {/* Primeira Linha: Curso/Matéria e Disciplina */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Curso / Matéria</label>
+                    <select
+                      value={filterCourseId}
+                      onChange={(e) => {
+                        setFilterCourseId(e.target.value);
+                        setFilterSubjectName(''); // Reset subject selection when course changes
+                      }}
+                      className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+                    >
+                      <option value="all">Todos os Cursos</option>
+                      {courses.map(course => (
+                        <option key={course.id} value={course.id}>{course.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Disciplina (Digite ou Selecione)</label>
+                    <input
+                      type="text"
+                      list="admin-filter-subjects"
+                      placeholder="Buscar disciplina..."
+                      value={filterSubjectName}
+                      onChange={(e) => setFilterSubjectName(e.target.value)}
+                      className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
+                    />
+                    <datalist id="admin-filter-subjects">
+                      {availableSubjectsForFilter.map(sub => (
+                        <option key={sub.id} value={sub.name} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                {/* Segunda Linha: Busca por texto */}
                 <div>
-                  <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Busca Textual</label>
+                  <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Busca por Texto</label>
                   <input
                     type="text"
-                    placeholder="Buscar no título ou descrição..."
+                    placeholder="Buscar no título ou descrição do resumo..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Filtrar por Disciplina</label>
-                  <select
-                    value={filterSubjectId}
-                    onChange={(e) => setFilterSubjectId(e.target.value)}
-                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
-                  >
-                    <option value="all">Todas as Disciplinas</option>
-                    {subjects.map(sub => (
-                      <option key={sub.id} value={sub.id}>{sub.name}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
