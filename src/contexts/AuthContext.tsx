@@ -32,6 +32,7 @@ interface AuthContextType {
   toggleLgpdConsent: () => Promise<void>;
   addSystemUser: (email: string, fullName: string) => Promise<void>;
   removeSystemUser: (email: string) => Promise<void>;
+  transferSupraStatus: (newSupraEmail: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,6 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: su.id,
             fullName: su.full_name,
             permissions: typeof su.permissions === 'object' && su.permissions !== null ? su.permissions as { [key: string]: boolean } : { all: true },
+            isSurpa: su.is_supra,
+            isSupra: su.is_supra,
             createdAt: su.created_at
           })));
         }
@@ -237,11 +240,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      let isSupra = false;
+      if (profile.role === 'admin') {
+        const { data: adminInfo } = await supabase
+          .from('system_users')
+          .select('is_supra')
+          .eq('id', suUser.id)
+          .single();
+        if (adminInfo) {
+          isSupra = adminInfo.is_supra;
+        }
+      }
+
       const appUser: User = {
         id: suUser.id,
         email: suUser.email || '',
         name: profile.full_name || suUser.email || '',
-        role: profile.role as 'admin' | 'student'
+        role: profile.role as 'admin' | 'student',
+        isSupra
       };
 
       setUser(appUser);
@@ -579,6 +595,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
+  const transferSupraStatus = async (newSupraEmail: string) => {
+    const { error } = await supabase.rpc('transfer_supra_status', {
+      new_supra_email: newSupraEmail
+    });
+    if (error) {
+      console.error('Erro ao transferir status de Supra Admin:', error);
+      throw error;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    await handleSessionChange(session);
+  };
+
   // Funções do Estudante
   const sendSupportMessage = async (messageText: string) => {
     if (!user) return;
@@ -661,7 +689,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addExamCycle,
         toggleLgpdConsent,
         addSystemUser,
-        removeSystemUser
+        removeSystemUser,
+        transferSupraStatus
       }}
     >
       {children}
