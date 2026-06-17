@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile } from '../types';
+import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile, ExamCycle } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +26,7 @@ interface AuthContextType {
   sendSupportMessage: (message: string) => void;
   respondSupportMessage: (id: string, response: string) => void;
   addStudentPoints: (points: number) => void;
+  addExamCycle: (subjectId: string, correctAnswers: number, totalQuestions: number) => void;
   toggleLgpdConsent: () => void;
 }
 
@@ -200,15 +201,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [
       {
         user: { id: 'stu-basic', email: 'joao@email.com', name: 'João Silva', role: 'student' },
-        profile: { id: 'p-basic', userId: 'stu-basic', plan: 'basic', lgpdRankingConsent: true, rankingPoints: 70, summaryAccess: [], aiConsultantAccess: false }
+        profile: { 
+          id: 'p-basic', 
+          userId: 'stu-basic', 
+          plan: 'basic', 
+          lgpdRankingConsent: true, 
+          rankingPoints: 70, 
+          summaryAccess: [], 
+          aiConsultantAccess: false,
+          examCycles: [
+            { id: 'ec-1', subjectName: 'Direito Constitucional I', correctAnswers: 7, totalQuestions: 10, percentage: 70, completedAt: '2026-06-16T14:30:00Z' },
+            { id: 'ec-2', subjectName: 'Direito Penal Geral', correctAnswers: 5, totalQuestions: 10, percentage: 50, completedAt: '2026-06-16T16:00:00Z' }
+          ]
+        }
       },
       {
         user: { id: 'stu-pro', email: 'maria@email.com', name: 'Maria Santos', role: 'student' },
-        profile: { id: 'p-pro', userId: 'stu-pro', plan: 'pro', lgpdRankingConsent: true, rankingPoints: 120, summaryAccess: [], aiConsultantAccess: false }
+        profile: { 
+          id: 'p-pro', 
+          userId: 'stu-pro', 
+          plan: 'pro', 
+          lgpdRankingConsent: true, 
+          rankingPoints: 120, 
+          summaryAccess: [], 
+          aiConsultantAccess: false,
+          examCycles: [
+            { id: 'ec-3', subjectName: 'Teoria Geral da Administração', correctAnswers: 9, totalQuestions: 10, percentage: 90, completedAt: '2026-06-15T11:00:00Z' },
+            { id: 'ec-4', subjectName: 'Comportamento Organizacional', correctAnswers: 8, totalQuestions: 10, percentage: 80, completedAt: '2026-06-16T10:15:00Z' }
+          ]
+        }
       },
       {
         user: { id: 'stu-prem', email: 'carlos@email.com', name: 'Carlos Oliveira', role: 'student' },
-        profile: { id: 'p-prem', userId: 'stu-prem', plan: 'premium', lgpdRankingConsent: false, rankingPoints: 210, summaryAccess: [], aiConsultantAccess: true }
+        profile: { 
+          id: 'p-prem', 
+          userId: 'stu-prem', 
+          plan: 'premium', 
+          lgpdRankingConsent: false, 
+          rankingPoints: 210, 
+          summaryAccess: [], 
+          aiConsultantAccess: true,
+          examCycles: [
+            { id: 'ec-5', subjectName: 'Direito Civil - Contratos', correctAnswers: 10, totalQuestions: 10, percentage: 100, completedAt: '2026-06-14T09:00:00Z' },
+            { id: 'ec-6', subjectName: 'Direito Constitucional I', correctAnswers: 9, totalQuestions: 10, percentage: 90, completedAt: '2026-06-16T18:45:00Z' }
+          ]
+        }
       }
     ];
   });
@@ -281,6 +318,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('eh_ai_files', JSON.stringify(aiKnowledgeFiles));
   }, [aiKnowledgeFiles]);
+
+  // Migration for old localStorage that does not contain examCycles yet
+  useEffect(() => {
+    setStudents(prev => {
+      let changed = false;
+      const updated = prev.map(s => {
+        if (!s.profile.examCycles) {
+          changed = true;
+          let defaultCycles: ExamCycle[] = [];
+          if (s.user.id === 'stu-basic') {
+            defaultCycles = [
+              { id: 'ec-1', subjectName: 'Direito Constitucional I', correctAnswers: 7, totalQuestions: 10, percentage: 70, completedAt: '2026-06-16T14:30:00Z' },
+              { id: 'ec-2', subjectName: 'Direito Penal Geral', correctAnswers: 5, totalQuestions: 10, percentage: 50, completedAt: '2026-06-16T16:00:00Z' }
+            ];
+          } else if (s.user.id === 'stu-pro') {
+            defaultCycles = [
+              { id: 'ec-3', subjectName: 'Teoria Geral da Administração', correctAnswers: 9, totalQuestions: 10, percentage: 90, completedAt: '2026-06-15T11:00:00Z' },
+              { id: 'ec-4', subjectName: 'Comportamento Organizacional', correctAnswers: 8, totalQuestions: 10, percentage: 80, completedAt: '2026-06-16T10:15:00Z' }
+            ];
+          } else if (s.user.id === 'stu-prem') {
+            defaultCycles = [
+              { id: 'ec-5', subjectName: 'Direito Civil - Contratos', correctAnswers: 10, totalQuestions: 10, percentage: 100, completedAt: '2026-06-14T09:00:00Z' },
+              { id: 'ec-6', subjectName: 'Direito Constitucional I', correctAnswers: 9, totalQuestions: 10, percentage: 90, completedAt: '2026-06-16T18:45:00Z' }
+            ];
+          }
+          return { ...s, profile: { ...s.profile, examCycles: defaultCycles } };
+        }
+        return s;
+      });
+      return changed ? updated : prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (studentProfile && !studentProfile.examCycles) {
+      const currentStudent = students.find(s => s.user.id === studentProfile.userId);
+      if (currentStudent && currentStudent.profile.examCycles) {
+        setStudentProfile(prev => prev ? { ...prev, examCycles: currentStudent.profile.examCycles } : null);
+      }
+    }
+  }, [studentProfile, students]);
 
   // Login simulation
   const loginAs = (role: 'admin' | 'basic' | 'pro' | 'premium') => {
@@ -454,6 +532,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const addExamCycle = (subjectId: string, correctAnswers: number, totalQuestions: number) => {
+    if (!user || !studentProfile) return;
+
+    // Find subject name
+    const subject = subjects.find(s => s.id === subjectId);
+    const subjectName = subject ? subject.name : 'Simulado Geral';
+
+    const newCycle: ExamCycle = {
+      id: `ec-${Date.now()}`,
+      subjectName,
+      correctAnswers,
+      totalQuestions,
+      percentage: Math.round((correctAnswers / totalQuestions) * 100),
+      completedAt: new Date().toISOString()
+    };
+
+    const updatedCycles = [...(studentProfile.examCycles || []), newCycle];
+    const updatedProfile = { 
+      ...studentProfile, 
+      examCycles: updatedCycles,
+      rankingPoints: studentProfile.rankingPoints + (correctAnswers * 10)
+    };
+
+    setStudentProfile(updatedProfile);
+
+    setStudents(prev => prev.map(s => {
+      if (s.user.id === user.id) {
+        return { ...s, profile: updatedProfile };
+      }
+      return s;
+    }));
+  };
+
   const toggleLgpdConsent = () => {
     if (!user || !studentProfile) return;
 
@@ -495,6 +606,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendSupportMessage,
         respondSupportMessage,
         addStudentPoints,
+        addExamCycle,
         toggleLgpdConsent
       }}
     >
