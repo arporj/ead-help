@@ -51,7 +51,7 @@ CREATE POLICY "Allow admin full access to subjects" ON public.subjects
 CREATE POLICY "Allow read summaries based on plan or access" ON public.summaries
     FOR SELECT TO authenticated USING (
         public.is_admin(auth.uid()) OR
-        is_free = true OR
+        is_premium = false OR
         EXISTS (
             SELECT 1 FROM public.students s
             WHERE s.id = auth.uid() AND s.plan IN ('pro', 'premium')
@@ -78,7 +78,7 @@ CREATE POLICY "Allow admin full access to summary_access" ON public.summary_acce
 CREATE POLICY "Allow read questions based on plan" ON public.questions
     FOR SELECT TO authenticated USING (
         public.is_admin(auth.uid()) OR
-        type = 'simulado' OR
+        is_pro_or_premium = false OR
         EXISTS (
             SELECT 1 FROM public.students s
             WHERE s.id = auth.uid() AND s.plan IN ('pro', 'premium')
@@ -132,7 +132,7 @@ CREATE POLICY "Allow students to read their own support thread" ON public.suppor
 
 CREATE POLICY "Allow students to insert support messages" ON public.support_messages
     FOR INSERT TO authenticated WITH CHECK (
-        (student_id = auth.uid() AND sender_id = auth.uid()) OR public.is_admin(auth.uid())
+        student_id = auth.uid() OR public.is_admin(auth.uid())
     );
 
 CREATE POLICY "Allow admin full access to support_messages" ON public.support_messages
