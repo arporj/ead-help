@@ -7,7 +7,7 @@ Esta documentação descreve, de maneira simples e objetiva, todas as funcionali
 ## 1. O que é o EAD Help?
 O **EAD Help** é um portal de estudos online desenvolvido para ajudar estudantes universitários a se prepararem de forma eficiente para provas e exames. A plataforma funciona como uma biblioteca de materiais de apoio (resumos) e um centro de treinamento prático através de exercícios e simulados interativos.
 
-Além disso, ela conta com um **Consultor de Inteligência Artificial** que funciona como um tutor virtual de dúvidas jurídicas ou acadêmicas com base nos materiais oficiais da instituição.
+Além disso, ela conta com um **Consultor de Inteligência Artificial** que funciona como um tutor virtual de dúvidas jurídicas ou acadêmicas com base nos materiais oficiais da instituição, e um sistema de **Ranking Geral** gamificado para incentivar os estudos de forma saudável.
 
 ---
 
@@ -30,24 +30,32 @@ Você terá um painel administrativo protegido por senha onde poderá gerenciar 
 ### B. Para o Aluno (Estudante)
 Uma área de estudos moderna e limpa, onde o aluno acessa os conteúdos de acordo com o que ele contratou:
 
-#### 1. Simulados e Quizzes Interativos (Treinamento Prático)
-O aluno pode treinar respondendo a questões de múltipla escolha diretamente no celular ou computador.
-*   **Feedback Instantâneo**: Assim que ele clica em uma alternativa, o sistema avisa se ele acertou (exibindo em verde) ou errou (exibindo em vermelho e mostrando qual era a resposta certa), tornando o aprendizado dinâmico.
+#### 1. Simulados e Quizzes Interativos em Ciclos de 10 Questões
+O aluno treina respondendo a questões de múltipla escolha diretamente no celular ou computador.
+*   **Rodadas de 10 Questões**: Cada rodada de simulado possui **exatamente 10 questões**. O aluno responde uma por uma.
+*   **Regra de Conclusão**: O sistema só registrará o desempenho do aluno e atualizará sua posição no ranking se ele **responder às 10 questões até o final**. Se ele sair da tela ou abandonar o simulado na metade (ex: na questão 5), aquela tentativa será descartada e **nenhum ponto será computado**, mantendo o jogo justo.
+*   **Ciclos Contínuos**: Ao terminar as 10 questões da rodada, o aluno pode iniciar imediatamente outro ciclo de mais 10 questões, acumulando mais pontos.
+*   **Feedback Instantâneo**: Assim que ele clica em uma alternativa, o sistema avisa se ele acertou (verde) ou errou (vermelho).
 
-#### 2. Banco de Questões (BDQ) para Download e Impressão
+#### 2. Ranking Geral de Alunos & Privacidade (LGPD)
+Para incentivar a competição saudável entre os estudantes, a plataforma conta com uma tabela de classificação geral com base no desempenho das rodadas concluídas de 10 questões.
+*   **Adequação à LGPD (Privacidade)**: Para ter seu nome e suas notas exibidos no ranking visível para outros alunos, o estudante deve marcar explicitamente a opção de consentimento ("dar o de acordo").
+*   **Respeito ao Aluno**: Caso o aluno decida não compartilhar seu desempenho no ranking, ele continuará estudando normalmente, mas seu perfil e pontuação ficarão ocultos para os outros participantes da plataforma.
+
+#### 3. Banco de Questões (BDQ) para Download e Impressão
 Pensando nos alunos que preferem estudar no papel ou revisar o conteúdo de forma rápida, criamos o **BDQ**.
 *   Ele exibe uma lista limpa com todas as questões cadastradas, mostrando **apenas a pergunta e a resposta correta** (sem as alternativas erradas).
 *   Conta com um botão de "Salvar em PDF / Imprimir" que gera um documento perfeitamente formatado para impressão física.
 
-#### 3. Biblioteca de Resumos Autorizados
+#### 4. Biblioteca de Resumos Autorizados
 O aluno tem acesso a uma lista de resumos em PDF. Ele só conseguirá visualizar ou baixar os resumos que você liberar especificamente para a conta dele.
 
-#### 4. Consultor Jurídico via Inteligência Artificial
+#### 5. Consultor Jurídico via Inteligência Artificial
 Um chat interativo onde o aluno pode conversar diretamente com uma Inteligência Artificial. 
 *   A IA responde de forma imediata e personalizada, utilizando **exclusivamente** os arquivos de leis ou regulamentos em PDF que você carregou na base de dados.
-*   Se o aluno fizer perguntas que não têm relação com as diretrizes enviadas, a IA responderá educadamente que não tem autorização para tratar de outros temas, garantindo segurança pedagógica.
+*   Se o aluno fizer perguntas que não têm relação com as diretrizes enviadas, a IA responderá educadamente que não tem autorização para tratar de outros temas.
 
-#### 5. Suporte Direto
+#### 6. Suporte Direto
 Um canal simples de "Fale Conosco" onde o aluno envia mensagens de texto para tirar dúvidas operacionais ou acadêmicas diretamente com você.
 
 ---
