@@ -564,8 +564,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Inserir registro na tabela de estudantes
         await supabase
           .from('students')
-          .insert({ id: existing.id, plan: 'basic', lgpd_ranking_consent: false })
-          .onConflict('id').doNothing();
+          .upsert({ id: existing.id, plan: 'basic', lgpd_ranking_consent: false });
       }
 
       const { error } = await supabase
