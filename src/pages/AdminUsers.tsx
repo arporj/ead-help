@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Shield, Plus, X, Search, Check, AlertTriangle, Key } from 'lucide-react';
 
 export const AdminUsers: React.FC = () => {
-  const { systemUsers, addSystemUser, removeSystemUser } = useAuth();
+  const { user, systemUsers, addSystemUser, removeSystemUser, transferSupraStatus } = useAuth();
 
   // Form states
   const [email, setEmail] = useState('');
@@ -16,6 +16,8 @@ export const AdminUsers: React.FC = () => {
 
   // Confirmation modal states
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [supraTargetEmail, setSupraTargetEmail] = useState<string | null>(null);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +58,22 @@ export const AdminUsers: React.FC = () => {
       } catch (err) {
         setErrorMsg('Erro ao revogar acesso administrativo.');
       }
+    }
+  };
+
+  const handleTransferSupra = async () => {
+    if (!supraTargetEmail) return;
+    setIsTransferring(true);
+    setErrorMsg('');
+    try {
+      await transferSupraStatus(supraTargetEmail);
+      setSuccessMsg(`Liderança transferida com sucesso para ${supraTargetEmail}.`);
+      setSupraTargetEmail(null);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao transferir status de Supra Admin.');
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -165,7 +183,7 @@ export const AdminUsers: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto space-y-3.5 pr-2">
             {filteredAdmins.length === 0 ? (
-              <div className="text-center py-16 text-gray-500 text-xs">
+              <div className="text-center py-16 text-gray-550 text-xs">
                 Nenhum administrador encontrado.
               </div>
             ) : (
@@ -174,7 +192,7 @@ export const AdminUsers: React.FC = () => {
 
                 return (
                   <div key={admin.email} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl flex items-center justify-between gap-4">
-                    <div className="space-y-1.5 min-w-0">
+                    <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs border ${
                           isPending 
@@ -192,8 +210,12 @@ export const AdminUsers: React.FC = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-2 text-[9px] pt-1">
-                        {isPending ? (
-                          <span className="px-2 py-0.5 rounded bg-yellow-950 text-yellow-300 border border-yellow-500/20 font-semibold uppercase">
+                        {admin.isSupra ? (
+                          <span className="px-2 py-0.5 rounded bg-yellow-600/30 text-yellow-350 border border-yellow-500/25 font-bold uppercase text-[9px] flex items-center gap-1">
+                            👑 Supra Admin
+                          </span>
+                        ) : isPending ? (
+                          <span className="px-2 py-0.5 rounded bg-yellow-950/40 text-yellow-300 border border-yellow-500/20 font-semibold uppercase">
                             Convite Pendente
                           </span>
                         ) : (
@@ -210,16 +232,29 @@ export const AdminUsers: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Exclude button */}
-                    {admin.email !== 'admin@eadhelp.com' && (
-                      <button
-                        onClick={() => handleDeleteClick(admin.email)}
-                        className="p-2 rounded-xl bg-red-950/15 hover:bg-red-905 border border-red-500/20 hover:border-red-500 text-red-400 hover:text-white transition-all cursor-pointer"
-                        title="Revogar Acesso Administrativo"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Action to transfer Supra leadership */}
+                      {user?.isSupra && !admin.isSupra && !isPending && (
+                        <button
+                          onClick={() => setSupraTargetEmail(admin.email)}
+                          className="px-2.5 py-1.5 rounded-xl bg-yellow-600/10 hover:bg-yellow-600/30 border border-yellow-500/20 text-yellow-400 hover:text-yellow-200 transition-all cursor-pointer text-[10px] font-bold"
+                          title="Transferir Liderança de Supra Admin"
+                        >
+                          👑 Tornar Supra
+                        </button>
+                      )}
+
+                      {/* Exclude button (Only if not a Supra Admin) */}
+                      {!admin.isSupra && (
+                        <button
+                          onClick={() => handleDeleteClick(admin.email)}
+                          className="p-2 rounded-xl bg-red-950/15 hover:bg-red-905 border border-red-500/20 hover:border-red-500 text-red-400 hover:text-white transition-all cursor-pointer"
+                          title="Revogar Acesso Administrativo"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -228,7 +263,7 @@ export const AdminUsers: React.FC = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Exclude Confirmation Modal */}
       {userToDelete && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-brand-dark border-2 border-red-500/20 p-6 rounded-2xl max-w-sm w-full space-y-4 text-center">
@@ -252,6 +287,43 @@ export const AdminUsers: React.FC = () => {
                 className="flex-1 bg-red-900 hover:bg-red-800 text-white py-2 rounded-xl text-xs font-bold cursor-pointer"
               >
                 Sim, Revogar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Supra Confirmation Modal */}
+      {supraTargetEmail && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-brand-dark border-2 border-yellow-500/20 p-6 rounded-2xl max-w-md w-full space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-yellow-900/25 border border-yellow-500/20 text-yellow-400 flex items-center justify-center mx-auto">
+              <AlertTriangle size={24} />
+            </div>
+            <h4 className="font-bold text-white text-sm">Transferir Liderança de Supra Admin?</h4>
+            <div className="text-xs text-gray-400 leading-relaxed space-y-2 text-left bg-brand-dark/50 border border-brand-medium/40 p-4 rounded-xl">
+              <p className="text-yellow-300 font-bold text-center uppercase tracking-wider text-[10px]">Atenção: Ação Irreversível!</p>
+              <p>Você está promovendo o administrador **{supraTargetEmail}** a **Supra Admin**.</p>
+              <p>No mesmo instante, **você perderá a liderança** e será rebaixado a administrador comum, perdendo os seguintes privilégios:</p>
+              <ul className="list-disc pl-4 space-y-1 text-[11px] text-gray-350">
+                <li>Você não poderá mais convidar ou remover outros administradores.</li>
+                <li>Você não poderá mais transferir a liderança de volta para si mesmo (apenas o novo Supra Admin poderá fazer isso).</li>
+              </ul>
+            </div>
+            <div className="flex gap-2">
+              <button
+                disabled={isTransferring}
+                onClick={() => setSupraTargetEmail(null)}
+                className="flex-1 bg-brand-medium/40 hover:bg-brand-medium text-white py-2.5 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={isTransferring}
+                onClick={handleTransferSupra}
+                className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-brand-dark py-2.5 rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isTransferring ? 'Processando...' : '👑 Confirmar Transferência'}
               </button>
             </div>
           </div>
