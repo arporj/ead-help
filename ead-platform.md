@@ -21,13 +21,14 @@ O sistema possui duas personas:
 1. **Diferenciação Quiz vs BDQ**:
    - **Modo Quiz**: Múltipla escolha interativa com feedback de acerto/erro.
    - **Modo BDQ**: Lista limpa de questões mostrando apenas enunciado + resposta correta (sem alternativas incorretas) otimizada para download/impressão.
-2. **Restrição de Acesso por Planos**:
+2. **Cadastro Estável de Questões**: Cadastro manual e robusto pelo administrador, garantindo confiabilidade nos dados do quiz.
+3. **Restrição de Acesso por Planos**:
    - **Aluno Básico**: Quiz de Simulado (grátis).
    - **Aluno Pro**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado.
    - **Aluno Premium**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado, BDQ de Provas.
-3. **Resumos (PDFs)**: Liberação individual realizada pelo administrador.
-4. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
-5. **Sem Bugs de Compilação**: Build de produção limpa.
+4. **Resumos (PDFs)**: Liberação individual realizada pelo administrador, com arquivos armazenados no Supabase Storage.
+5. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
+6. **Sem Bugs de Compilação**: Build de produção limpa.
 
 ---
 
