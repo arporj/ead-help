@@ -1,11 +1,11 @@
 # Plano do Projeto - EAD Help Platform
 
 ## Overview
-A plataforma **EAD Help** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias controlados e simulados de questões (provas oficiais AV/AVS e simulados comuns). 
+A plataforma **EAD Help** é um ambiente virtual de aprendizado voltado para estudantes universitários, oferecendo resumos de matérias em PDF, quizzes interativos de simulados e provas, e o **Banco de Questões (BDQ)** - uma ferramenta onde o aluno visualiza e faz download de questões contendo apenas o enunciado e a resposta correta para estudo direcionado.
 
 O sistema possui duas personas:
-- **Administrador**: Gerencia alunos, cursos/cadeiras, matérias, resumos (upload de PDFs), questões de provas (cadastro manual) e permissões individuais de acesso aos resumos, além de responder às mensagens de suporte.
-- **Aluno**: Estuda através de resumos liberados especificamente para ele, responde a simulados de questões filtrados pelo seu nível de plano (Simulados públicos vs AV/AVS para assinantes Pro/Premium) e pode abrir chamados/mensagens diretas de suporte com o admin.
+- **Administrador**: Gerencia alunos, cursos, matérias, resumos (PDF), questões (cadastro manual) e responde às mensagens de suporte.
+- **Aluno**: Estuda através de resumos liberados, joga Quizzes interativos (gratuitos/pagos), baixa os BDQs (conforme seu plano) e envia mensagens ao suporte.
 
 ---
 
@@ -18,27 +18,30 @@ O sistema possui duas personas:
 ---
 
 ## Success Criteria
-1. **Segurança de Acesso**: Alunos só conseguem ler ou fazer download de resumos cujas permissões foram concedidas pelo admin na tabela `summary_access`.
-2. **Restrição de Conteúdo por Plano**:
-   - Questões do tipo `'simulado'` são públicas (visíveis a todos os alunos).
-   - Questões do tipo `'av'` ou `'avs'` são restritas a alunos Pro/Premium.
-3. **Persistência de Resumos em PDF**: Upload de arquivos de resumos armazenados com segurança no Supabase Storage Bucket.
-4. **Sistema de Mensagens de Suporte**: Canal de comunicação direto entre aluno e admin, com status de leitura/resposta persistidos.
-5. **Sem Bugs de Compilação/Estilo**: Build em produção sem avisos/erros de TypeScript ou linter.
+1. **Diferenciação Quiz vs BDQ**:
+   - **Modo Quiz**: Múltipla escolha interativa com feedback de acerto/erro.
+   - **Modo BDQ**: Lista limpa de questões mostrando apenas enunciado + resposta correta (sem alternativas incorretas) otimizada para download/impressão.
+2. **Restrição de Acesso por Planos**:
+   - **Aluno Básico**: Quiz de Simulado (grátis).
+   - **Aluno Pro**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado.
+   - **Aluno Premium**: Quiz de Simulado, Quiz de Provas, BDQ de Simulado, BDQ de Provas.
+3. **Resumos (PDFs)**: Liberação individual realizada pelo administrador.
+4. **Comunicação Aluno-Admin**: Envio de mensagens de suporte e respostas persistidas no banco.
+5. **Sem Bugs de Compilação**: Build de produção limpa.
 
 ---
 
 ## Tech Stack
-- **Frontend**: React (Vite) + TypeScript + Tailwind CSS Puro (Design customizado e animado)
-- **Banco de Dados & Autenticação**: Supabase (PostgreSQL, Row Level Security, Storage para resumos físicos em PDF)
-- **Roteamento & Estado**: React Router DOM (v6), Context API para Auth e dados locais.
+- **Frontend**: React (Vite) + TypeScript + Tailwind CSS Puro
+- **Banco de Dados & Autenticação**: Supabase (PostgreSQL, RLS, Storage para resumos físicos em PDF)
+- **Roteamento & Estado**: React Router DOM (v6), Context API.
 
 ---
 
 ## File Structure
 ```text
 ead-help/
-├── .agent/                  # Scripts e ferramentas de auditoria e testes
+├── .agent/
 ├── .git/
 ├── .gitignore
 ├── index.html
@@ -65,6 +68,7 @@ ead-help/
     │   ├── Login.tsx
     │   ├── StudentDashboard.tsx
     │   ├── StudentExams.tsx
+    │   ├── StudentBDQ.tsx
     │   ├── StudentSupport.tsx
     │   ├── AdminDashboard.tsx
     │   ├── AdminStudents.tsx
@@ -81,14 +85,14 @@ ead-help/
 ### Fase 1: Fundação do Banco de Dados & Infra (Supabase)
 - **Tarefa 1.1**: Criação do esquema de banco de dados (`profiles`, `students`, `courses`, `subjects`, `summaries`, `summary_access`, `questions`, `student_answers`, `support_messages`).
   - **Agente**: `database-architect` | **Skill**: `database-design`
-  - **INPUT**: Modelo conceitual do banco atualizado.
+  - **INPUT**: Modelo de dados atualizado.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000000_schema.sql`.
   - **VERIFY**: Executar validação de esquema local.
-- **Tarefa 1.2**: Implementação das Políticas de Segurança RLS (Row Level Security) e Bucket do Storage.
+- **Tarefa 1.2**: Políticas RLS para visualização condicional de questões (Simulado vs Prova) e segurança de PDFs.
   - **Agente**: `security-auditor` | **Skill**: `vulnerability-scanner`
-  - **INPUT**: Regras de negócio de acesso a resumos, mensagens e questões.
+  - **INPUT**: Regras de negócio de visibilidade.
   - **OUTPUT**: Script SQL em `supabase/migrations/20260617000100_rls_policies.sql`.
-  - **VERIFY**: Testar políticas com perfis simulados no Supabase e verificar segurança do bucket de PDFs.
+  - **VERIFY**: Validar isolamento das queries utilizando perfis de diferentes níveis.
 
 ### Fase 2: Configuração Inicial e Autenticação (Frontend)
 - **Tarefa 2.1**: Inicialização do projeto React Vite com TypeScript e Tailwind CSS.
@@ -100,19 +104,19 @@ ead-help/
   - **Agente**: `frontend-specialist` | **Skill**: `clean-code`
   - **INPUT**: Chaves do Supabase.
   - **OUTPUT**: `src/lib/supabaseClient.ts` e `src/contexts/AuthContext.tsx`.
-  - **VERIFY**: Teste de login/logout com contas criadas no Supabase.
+  - **VERIFY**: Teste de login/logout.
 
 ### Fase 3: Área Administrativa (Admin Pages)
 - **Tarefa 3.1**: Criação do Painel Administrativo Geral e Roteamento de Admin.
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: `AuthContext` e `Layout.tsx`.
-  - **OUTPUT**: Visualização de métricas (incluindo número de pendências de suporte) e navegação exclusiva.
-  - **VERIFY**: Alunos são redirecionados ao tentar acessar rotas admin.
+  - **OUTPUT**: Visualização de métricas e navegação exclusiva.
+  - **VERIFY**: Usuários sem permissão administrativa são bloqueados.
 - **Tarefa 3.2**: Tela de Gestão de Alunos e Concessão de Permissões de Resumo (`AdminStudents.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
-  - **INPUT**: Tabelas `profiles`, `students` e `summary_access`.
-  - **OUTPUT**: Lista de alunos, cadastro manual de novos alunos, controle de plano e formulário de liberação de PDFs.
-  - **VERIFY**: O admin consegue selecionar o resumo, o aluno, e salvar a permissão com sucesso.
+  - **INPUT**: Tabelas de perfis, alunos e permissões.
+  - **OUTPUT**: Lista de alunos, cadastro manual, controle de plano e formulário de liberação de PDFs.
+  - **VERIFY**: Gravação de acesso individual a resumos com sucesso.
 - **Tarefa 3.3**: Cadastro de Cursos, Matérias e Resumos (PDFs) (`AdminContent.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Tabelas de cursos, matérias e resumos + bucket do Supabase Storage.
@@ -130,16 +134,21 @@ ead-help/
   - **INPUT**: Matérias e resumos (PDFs) autorizados para o aluno.
   - **OUTPUT**: Listagem de matérias, exibição dos resumos disponíveis e links para baixar o PDF.
   - **VERIFY**: Apenas os resumos liberados são exibidos.
-- **Tarefa 4.2**: Área de Resolução de Questões e Provas (`StudentExams.tsx`).
+- **Tarefa 4.2**: Área de Resolução de Quizzes Interativos (`StudentExams.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
-  - **INPUT**: Banco de questões (simulado aberto e AV/AVS pago) e respostas persistidas em `student_answers`.
-  - **OUTPUT**: Interface interativa de perguntas, feedback instantâneo de correção e estatísticas de aproveitamento.
-  - **VERIFY**: Aluno Básico visualiza apenas simulados comuns. Aluno Pro/Premium acessa AV/AVS.
-- **Tarefa 4.3**: Tela de Suporte e Contato Direto (`StudentSupport.tsx`).
+  - **INPUT**: Banco de questões (simulado aberto e provas oficiais se Pro/Premium).
+  - **OUTPUT**: Interface interativa de perguntas, feedback instantâneo de correção e estatísticas.
+  - **VERIFY**: Aluno Básico não consegue obter questões do tipo AV/AVS.
+- **Tarefa 4.3**: Tela de Download/Visualização de Banco de Questões - BDQ (`StudentBDQ.tsx`).
+  - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
+  - **INPUT**: Tabela `questions` filtrada pelo plano e renderizada apenas com enunciado + resposta correta.
+  - **OUTPUT**: Visualização limpa com botão de impressão de PDF utilizando CSS `@media print`.
+  - **VERIFY**: Aluno Básico não acessa. Aluno Pro acessa BDQ de Simulado. Aluno Premium acessa todos os BDQs.
+- **Tarefa 4.4**: Tela de Suporte e Contato Direto (`StudentSupport.tsx`).
   - **Agente**: `frontend-specialist` | **Skill**: `frontend-design`
   - **INPUT**: Tabela `support_messages`.
   - **OUTPUT**: Histórico de chamados enviados, campo para enviar novas mensagens e exibição das respostas do administrador.
-  - **VERIFY**: Mensagens enviadas aparecem instantaneamente para o aluno e ficam listadas no painel do administrador.
+  - **VERIFY**: Envio de mensagens e respostas funcionando adequadamente.
 
 ---
 
