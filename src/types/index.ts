@@ -5,6 +5,15 @@ export interface User {
   role: 'admin' | 'student';
 }
 
+export interface ExamCycle {
+  id: string;
+  subjectName: string;
+  correctAnswers: number;
+  totalQuestions: number;
+  percentage: number;
+  completedAt: string;
+}
+
 export interface StudentProfile {
   id: string;
   userId: string;
@@ -13,6 +22,7 @@ export interface StudentProfile {
   rankingPoints: number;
   summaryAccess: string[]; // List of summary IDs allowed for avulso access
   aiConsultantAccess: boolean; // Custom access purchased
+  examCycles: ExamCycle[]; // List of completed cycles
 }
 
 export interface Course {
