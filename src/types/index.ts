@@ -71,3 +71,11 @@ export interface AIKnowledgeFile {
   fileSize: string;
   uploadedAt: string;
 }
+
+export interface SystemUser {
+  email: string;
+  id: string | null;
+  fullName: string | null;
+  permissions: { [key: string]: boolean };
+  createdAt: string;
+}
