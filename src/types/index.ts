@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'student';
+  isSupra?: boolean;
 }
 
 export interface ExamCycle {
@@ -77,5 +78,6 @@ export interface SystemUser {
   id: string | null;
   fullName: string | null;
   permissions: { [key: string]: boolean };
+  isSupra: boolean;
   createdAt: string;
 }
