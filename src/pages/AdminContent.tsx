@@ -30,6 +30,7 @@ export const AdminContent: React.FC = () => {
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
   const [filterSubjectName, setFilterSubjectName] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
   const availableSubjectsForFilter = subjects.filter(sub => {
     if (filterCourseId !== 'all' && sub.courseId !== filterCourseId) return false;
@@ -406,21 +407,72 @@ export const AdminContent: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Disciplina (Digite ou Selecione)</label>
-                    <input
-                      type="text"
-                      list="admin-filter-subjects"
-                      placeholder="Buscar disciplina..."
-                      value={filterSubjectName}
-                      onChange={(e) => setFilterSubjectName(e.target.value)}
-                      className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
-                    />
-                    <datalist id="admin-filter-subjects">
-                      {availableSubjectsForFilter.map(sub => (
-                        <option key={sub.id} value={sub.name} />
-                      ))}
-                    </datalist>
+                  <div className="relative">
+                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Disciplina</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Selecione ou digite para filtrar..."
+                        value={filterSubjectName}
+                        onFocus={() => setIsFilterDropdownOpen(true)}
+                        onChange={(e) => {
+                          setFilterSubjectName(e.target.value);
+                          setIsFilterDropdownOpen(true);
+                        }}
+                        className="w-full bg-brand-dark border border-brand-medium/60 rounded-lg pl-2.5 pr-8 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <svg className={`w-3.5 h-3.5 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {isFilterDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsFilterDropdownOpen(false)}></div>
+                        <ul className="absolute z-20 w-full mt-1 max-h-40 overflow-y-auto bg-brand-dark border border-brand-medium rounded-lg shadow-xl divide-y divide-brand-medium/30 focus:outline-none text-xs">
+                          <li
+                            onClick={() => {
+                              setFilterSubjectName('');
+                              setIsFilterDropdownOpen(false);
+                            }}
+                            className="px-3 py-2 text-gray-400 hover:bg-brand-medium/30 hover:text-white cursor-pointer transition-colors"
+                          >
+                            Todas as Disciplinas
+                          </li>
+                          {availableSubjectsForFilter
+                            .filter(sub => 
+                              sub.name.toLowerCase().includes(filterSubjectName.toLowerCase())
+                            )
+                            .map(sub => (
+                              <li
+                                key={sub.id}
+                                onClick={() => {
+                                  setFilterSubjectName(sub.name);
+                                  setIsFilterDropdownOpen(false);
+                                }}
+                                className={`px-3 py-2 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors ${
+                                  filterSubjectName.toLowerCase() === sub.name.toLowerCase() 
+                                    ? 'bg-brand-medium text-brand-light font-bold' 
+                                    : 'text-gray-305'
+                                }`}
+                              >
+                                {sub.name}
+                              </li>
+                            ))}
+                          {availableSubjectsForFilter.filter(sub => 
+                            sub.name.toLowerCase().includes(filterSubjectName.toLowerCase())
+                          ).length === 0 && (
+                            <li className="px-3 py-2 text-gray-500 italic">Nenhuma disciplina encontrada</li>
+                          )}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 </div>
 
