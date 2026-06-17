@@ -23,18 +23,39 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      if (cleanEmail.includes('admin')) {
+      if (cleanEmail === 'admin@eadhelp.com') {
         await loginAs('admin');
         navigate('/admin');
-      } else if (cleanEmail.includes('maria') || cleanEmail.includes('pro')) {
+      } else if (cleanEmail === 'joao@email.com') {
+        await loginAs('basic');
+        navigate('/student');
+      } else if (cleanEmail === 'maria@email.com') {
         await loginAs('pro');
         navigate('/student');
-      } else if (cleanEmail.includes('carlos') || cleanEmail.includes('prem')) {
+      } else if (cleanEmail === 'carlos@email.com') {
         await loginAs('premium');
         navigate('/student');
       } else {
-        await loginAs('basic');
-        navigate('/student');
+        // E-mail real arbitrário digitado pelo usuário
+        await loginAs(cleanEmail);
+
+        // Buscar a role do usuário no Supabase para redirecionamento dinâmico
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profile?.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/student');
+          }
+        } else {
+          navigate('/student');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Erro inesperado ao realizar login.');
