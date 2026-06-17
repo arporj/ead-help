@@ -38,7 +38,7 @@ export const LandingPage: React.FC = () => {
         </h1>
         
         <p className="mt-6 text-lg sm:text-xl text-gray-300 max-w-2xl leading-relaxed">
-          A plataforma completa com resumos dirigidos, banco de questões com gabarito para impressão e consultor de Inteligência Artificial para tirar dúvidas das matérias.
+          A plataforma completa com resumos dirigidos, banco de questões com gabarito para impressão e consultor de Inteligência Artificial para tirar dúvidas das disciplinas.
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
