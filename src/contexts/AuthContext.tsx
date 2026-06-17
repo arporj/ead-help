@@ -345,8 +345,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let name = '';
 
     if (role === 'admin') {
-      email = 'admin@eadhelp.com';
-      name = 'Administrador EAD Help';
+      email = 'admin@helpead.com';
+      name = 'Administrador Help EAD';
     } else if (role === 'basic') {
       email = 'joao@email.com';
       name = 'João Silva';
