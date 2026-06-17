@@ -171,7 +171,7 @@ const INITIAL_QUESTIONS: Question[] = [
 ];
 
 const INITIAL_SUPPORT: SupportMessage[] = [
-  { id: 'sup1', studentId: 'stu-basic', studentName: 'João Silva', message: 'Como faço para ter acesso aos resumos premium da matéria de Direito Penal?', response: 'Olá João! Os resumos premium estão disponíveis para assinantes Pro e Premium. Você também pode comprá-los de forma avulsa falando com nossa administração.', createdAt: '2026-06-16T15:00:00Z' }
+  { id: 'sup1', studentId: 'stu-basic', studentName: 'João Silva', message: 'Como faço para ter acesso aos resumos premium da disciplina de Direito Penal?', response: 'Olá João! Os resumos premium estão disponíveis para assinantes Pro e Premium. Você também pode comprá-los de forma avulsa falando com nossa administração.', createdAt: '2026-06-16T15:00:00Z' }
 ];
 
 const INITIAL_FILES: AIKnowledgeFile[] = [
