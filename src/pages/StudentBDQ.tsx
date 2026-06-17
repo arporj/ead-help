@@ -116,7 +116,7 @@ export const StudentBDQ: React.FC = () => {
       <div className="space-y-4 print:space-y-6 print:text-black">
         {allowedQuestions.length === 0 ? (
           <div className="text-center py-12 text-gray-500 text-xs print:hidden">
-            Nenhuma questão disponível para esta matéria com o seu plano de acesso.
+            Nenhuma questão disponível para esta disciplina com o seu plano de acesso.
           </div>
         ) : (
           allowedQuestions.map((q, idx) => {
@@ -143,7 +143,7 @@ export const StudentBDQ: React.FC = () => {
                     )}
                   </div>
                   <span className="hidden print:inline text-gray-500 text-[10px]">
-                    Matéria: {subject?.name}
+                    Disciplina: {subject?.name}
                   </span>
                 </div>
 

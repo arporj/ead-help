@@ -167,7 +167,7 @@ export const AdminContent: React.FC = () => {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Cadastrar Matéria
+              Cadastrar Disciplina
             </button>
           </div>
 
@@ -211,7 +211,7 @@ export const AdminContent: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
-                  Matéria/Disciplina Associada
+                  Disciplina Associada
                 </label>
                 <select
                   value={subjectId}
@@ -282,7 +282,7 @@ export const AdminContent: React.FC = () => {
               </div>
 
               <div className="bg-brand-dark/30 border border-brand-medium/55 p-3 rounded-xl text-[10px] text-gray-400 leading-relaxed">
-                Os cursos servem como a categoria principal na qual as disciplinas/matérias serão vinculadas.
+                Os cursos servem como a categoria principal na qual as disciplinas serão vinculadas.
               </div>
 
               <button
@@ -389,10 +389,10 @@ export const AdminContent: React.FC = () => {
             <div className="flex-1 flex flex-col min-h-0">
               {/* Filter Bar */}
               <div className="space-y-3 mb-4 bg-brand-dark/25 p-3 rounded-xl border border-brand-medium/40 shrink-0">
-                {/* Primeira Linha: Curso/Matéria e Disciplina */}
+                {/* Primeira Linha: Curso e Disciplina */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Curso / Matéria</label>
+                    <label className="block text-[9px] font-bold text-brand-light uppercase tracking-wider mb-1">Curso</label>
                     <select
                       value={filterCourseId}
                       onChange={(e) => {
@@ -517,7 +517,7 @@ export const AdminContent: React.FC = () => {
                           </div>
                           <p className="text-[11px] text-gray-455 line-clamp-2 leading-relaxed">{sum.description}</p>
                           <div className="text-[9px] text-brand-light font-medium pt-1">
-                            {course?.name || 'Curso Não Identificado'} &bull; {subject?.name || 'Matéria Deletada'} {subject ? `(Semestre ${subject.semester})` : ''}
+                            {course?.name || 'Curso Não Identificado'} &bull; {subject?.name || 'Disciplina Deletada'} {subject ? `(Semestre ${subject.semester})` : ''}
                           </div>
                         </div>
                       </div>
