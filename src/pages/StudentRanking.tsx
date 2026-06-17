@@ -5,30 +5,40 @@ import { Award, ShieldAlert, CheckCircle2, UserCheck, Calendar, BookOpen, Layers
 export const StudentRanking: React.FC = () => {
   const { user, studentProfile, students, toggleLgpdConsent } = useAuth();
   const [activeTab, setActiveTab] = useState<'ciclo' | 'geral'>('ciclo');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('all');
 
   const consentGranted = studentProfile?.lgpdRankingConsent || false;
 
   const allCyclesList = students
     .filter(s => s.profile.lgpdRankingConsent || s.user.id === user?.id)
-    .map(s => {
+    .flatMap(s => {
       const isSelf = s.user.id === user?.id;
       const cycles = s.profile.examCycles || [];
 
-      if (cycles.length === 0) return null;
+      // Group cycles by subjectName and find the best percentage for each
+      const bestCyclesBySubject: { [subjectName: string]: typeof cycles[0] } = {};
+      
+      cycles.forEach(c => {
+        const currentBest = bestCyclesBySubject[c.subjectName];
+        if (!currentBest || c.percentage > currentBest.percentage) {
+          bestCyclesBySubject[c.subjectName] = c;
+        }
+      });
 
-      // Find the cycle with the highest success percentage
-      const bestCycle = cycles.reduce((best, current) => {
-        return current.percentage > best.percentage ? current : best;
-      }, cycles[0]);
-
-      return {
-        ...bestCycle,
+      return Object.values(bestCyclesBySubject).map(c => ({
+        ...c,
         studentName: isSelf && !s.profile.lgpdRankingConsent ? `${s.user.name} (Você - Privado)` : s.user.name,
         isCurrentUser: isSelf,
         plan: s.profile.plan
-      };
+      }));
     })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .filter(item => {
+      // Filter by selected subject name if set
+      if (selectedSubjectFilter !== 'all' && item.subjectName !== selectedSubjectFilter) {
+        return false;
+      }
+      return true;
+    })
     .sort((a, b) => {
       // Sort by success percentage descending
       if (b.percentage !== a.percentage) {
@@ -166,7 +176,31 @@ export const StudentRanking: React.FC = () => {
 
           {/* TAB 1: RANKING POR CICLO */}
           {activeTab === 'ciclo' && (
-            <div className="bg-brand-medium/10 border border-brand-medium/40 rounded-2xl overflow-hidden shadow-xl animate-in fade-in duration-150">
+            <div className="space-y-4 animate-in fade-in duration-150">
+              {/* Filter bar */}
+              <div className="bg-brand-medium/10 border border-brand-medium/40 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <span className="text-gray-300 font-medium flex items-center gap-1.5">
+                  <Layers size={14} className="text-brand-light" />
+                  Filtrar Classificação por Disciplina:
+                </span>
+                <select
+                  value={selectedSubjectFilter}
+                  onChange={(e) => setSelectedSubjectFilter(e.target.value)}
+                  className="bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-2 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer w-full sm:w-64"
+                >
+                  <option value="all">Todas as Disciplinas (Misto)</option>
+                  {Array.from(
+                    new Set(
+                      students.flatMap(s => (s.profile.examCycles || []).map(c => c.subjectName))
+                    )
+                  ).map(subjectName => (
+                    <option key={subjectName} value={subjectName}>{subjectName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Leaderboard Table */}
+              <div className="bg-brand-medium/10 border border-brand-medium/40 rounded-2xl overflow-hidden shadow-xl">
               <div className="grid grid-cols-12 bg-brand-medium/20 p-4 border-b border-brand-medium/45 font-bold text-xs text-brand-light uppercase tracking-wider">
                 <span className="col-span-2 text-center">Posição</span>
                 <span className="col-span-4">Estudante</span>
