@@ -8,22 +8,27 @@ export const StudentRanking: React.FC = () => {
 
   const consentGranted = studentProfile?.lgpdRankingConsent || false;
 
-  // 1. Build "Por Ciclo" Ranking List
-  // Every completed exam cycle is a separate entry in this ranking.
   const allCyclesList = students
-    .flatMap(s => {
+    .filter(s => s.profile.lgpdRankingConsent || s.user.id === user?.id)
+    .map(s => {
       const isSelf = s.user.id === user?.id;
-      const isAllowed = s.profile.lgpdRankingConsent || isSelf;
-      if (!isAllowed) return [];
-
       const cycles = s.profile.examCycles || [];
-      return cycles.map(c => ({
-        ...c,
+
+      if (cycles.length === 0) return null;
+
+      // Find the cycle with the highest success percentage
+      const bestCycle = cycles.reduce((best, current) => {
+        return current.percentage > best.percentage ? current : best;
+      }, cycles[0]);
+
+      return {
+        ...bestCycle,
         studentName: isSelf && !s.profile.lgpdRankingConsent ? `${s.user.name} (Você - Privado)` : s.user.name,
         isCurrentUser: isSelf,
         plan: s.profile.plan
-      }));
+      };
     })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
     .sort((a, b) => {
       // Sort by success percentage descending
       if (b.percentage !== a.percentage) {
