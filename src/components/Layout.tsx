@@ -54,14 +54,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     navigate('/');
   };
 
-  const handleQuickLogin = (role: 'admin' | 'basic' | 'pro' | 'premium') => {
-    loginAs(role);
-    if (role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/student');
+  const handleQuickLogin = async (role: 'admin' | 'basic' | 'pro' | 'premium') => {
+    try {
+      await loginAs(role);
+      if (role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/student');
+      }
+      setMobileMenuOpen(false);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao alternar de conta no simulador.');
     }
-    setMobileMenuOpen(false);
   };
 
   return (
