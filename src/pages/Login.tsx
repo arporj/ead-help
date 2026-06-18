@@ -47,9 +47,11 @@ export const Login: React.FC = () => {
         if (signUpErr) throw signUpErr;
 
         setSuccessMessage('Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Por favor, verifique a sua caixa de entrada e clique no link para ativar sua conta e entrar no sistema.');
-        // Limpar campos de cadastro
+        // Limpar todos os campos e voltar para a tela de login
+        setEmail('');
         setFullName('');
         setPassword('');
+        setIsSignUp(false);
       } else {
         // Fluxo de Login Real (Sign In) com e-mail e senha informados
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({
