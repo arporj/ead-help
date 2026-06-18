@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirme seu cadastro no Help EAD</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100% !important;
+      height: 100% !important;
+      background-color: #f4f6f8;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    .wrapper {
+      width: 100%;
+      table-layout: fixed;
+      background-color: #f4f6f8;
+      padding-top: 40px;
+      padding-bottom: 40px;
+    }
+    .card {
+      width: 100%;
+      max-width: 600px;
+      background-color: #0b1329;
+      border-radius: 16px;
+      border: 1px solid #1e293b;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .accent-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #10b981 0%, #0d9488 100%);
+    }
+    .header {
+      padding: 32px 32px 20px 32px;
+      text-align: center;
+    }
+    .logo-text {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      margin: 0;
+    }
+    .logo-accent {
+      color: #10b981;
+    }
+    .content {
+      padding: 20px 32px 32px 32px;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 0;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .text {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #10b981;
+      color: #0b1329 !important;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      transition: all 0.2s ease-in-out;
+    }
+    .btn:hover {
+      background-color: #ffffff;
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
+    }
+    .features {
+      background-color: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+    .features-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #10b981;
+      margin-top: 0;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .feature-item {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .feature-item:last-child {
+      margin-bottom: 0;
+    }
+    .footer {
+      padding: 24px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #1e293b;
+      background-color: #070c1b;
+    }
+    .footer-link {
+      color: #10b981;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <center class="wrapper">
+    <table class="card" width="100%" cellpadding="0" cellspacing="0">
+      <!-- Barra decorativa de gradiente verde-água no topo -->
+      <tr>
+        <td class="accent-bar"></td>
+      </tr>
+      
+      <!-- Cabeçalho -->
+      <tr>
+        <td class="header">
+          <h1 class="logo-text">Help <span class="logo-accent">EAD</span></h1>
+        </td>
+      </tr>
+      
+      <!-- Conteúdo Principal -->
+      <tr>
+        <td class="content">
+          <h2 class="title">Confirme seu endereço de e-mail</h2>
+          
+          <p class="text">
+            Olá! Obrigado por se cadastrar no <strong>Help EAD</strong>. Estamos muito felizes em ter você conosco na jornada rumo à aprovação máxima nos seus estudos acadêmicos.
+          </p>
+          
+          <p class="text" style="text-align: center;">
+            Para ativar sua conta e acessar instantaneamente seus simulados e resumos dirigidos, clique no botão de ativação abaixo:
+          </p>
+          
+          <!-- Botão de Ação -->
+          <div class="button-container">
+            <a href="{{ .ConfirmationURL }}" class="btn">Confirmar meu E-mail</a>
+          </div>
+          
+          <p class="text" style="font-size: 13px; text-align: center; color: #64748b;">
+            Se o botão acima não funcionar, copie e cole o link a seguir no seu navegador:<br>
+            <a href="{{ .ConfirmationURL }}" style="color: #10b981; word-break: break-all;">{{ .ConfirmationURL }}</a>
+          </p>
+          
+          <!-- Recursos inclusos no portal -->
+          <div class="features">
+            <h3 class="features-title">Recursos liberados na sua conta:</h3>
+            <div class="feature-item">✓ <strong>Simulados em Ciclos</strong> de 10 questões com feedback rápido de desempenho.</div>
+            <div class="feature-item">✓ <strong>Banco de Questões (BDQ)</strong> otimizado e limpo para gabaritos e impressões.</div>
+            <div class="feature-item">✓ <strong>Resumos Acadêmicos Autorizados</strong> focados nas disciplinas da sua grade.</div>
+            <div class="feature-item">✓ <strong>Tutor Jurídico de IA</strong> integrado para sanar dúvidas das leis e regulamentos.</div>
+          </div>
+        </td>
+      </tr>
+      
+      <!-- Rodapé -->
+      <tr>
+        <td class="footer">
+          <p style="margin: 0 0 8px 0;">Help EAD - Preparação Inteligente para Provas Universitárias.</p>
+          <p style="margin: 0;">Você recebeu este e-mail porque se cadastrou na nossa plataforma. Se não foi você, por favor desconsidere.</p>
+        </td>
+      </tr>
+    </table>
+  </center>
+</body>
+</html>
