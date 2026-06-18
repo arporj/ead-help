@@ -15,6 +15,16 @@ export const LandingPage: React.FC = () => {
   const { user, loginAs } = useAuth();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/student');
+      }
+    }
+  }, [user, navigate]);
+
   const handleQuickAccess = async (plan: 'basic' | 'pro' | 'premium') => {
     try {
       await loginAs(plan);
