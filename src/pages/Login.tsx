@@ -96,12 +96,16 @@ export const Login: React.FC = () => {
           friendlyMessage = 'E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.';
         } else if (errMsg.includes('User not found') || errMsg.includes('User does not exist')) {
           friendlyMessage = 'Usuário não encontrado. Cadastre-se ou verifique o e-mail digitado.';
-        } else if (errMsg.includes('Invalid email') || errMsg.includes('invalid_email')) {
+        } else if (errMsg.includes('Invalid email') || errMsg.includes('invalid_email') || errMsg.includes('Email address is invalid')) {
           friendlyMessage = 'E-mail em formato inválido. Por favor, digite um endereço de e-mail válido.';
-        } else if (errMsg.includes('Password should be')) {
+        } else if (errMsg.includes('Password should be') || errMsg.includes('at least 6 characters')) {
           friendlyMessage = 'A senha deve conter pelo menos 6 caracteres.';
-        } else if (errMsg.includes('User already registered') || errMsg.includes('already exists')) {
-          friendlyMessage = 'Este endereço de e-mail já está cadastrado. Faça login ou tente outro e-mail.';
+        } else if (errMsg.includes('Password is too weak') || errMsg.includes('weak_password')) {
+          friendlyMessage = 'Sua senha é muito fraca. Digite uma combinação de senha mais forte.';
+        } else if (errMsg.includes('User already registered') || errMsg.includes('already exists') || errMsg.includes('already_registered')) {
+          friendlyMessage = 'Este endereço de e-mail já está cadastrado. Tente fazer login ou recupere sua senha.';
+        } else if (errMsg.toLowerCase().includes('signup_disabled')) {
+          friendlyMessage = 'O cadastro de novos usuários está temporariamente desativado no sistema.';
         } else if (errMsg.toLowerCase().includes('fetch') || errMsg.toLowerCase().includes('network') || errMsg.toLowerCase().includes('connection')) {
           friendlyMessage = 'Erro de rede. Verifique sua conexão com a internet e tente novamente.';
         } else if (errMsg) {
