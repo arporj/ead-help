@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, ListCollapse, CheckCircle2 } from 'lucide-react';
+import { Plus, ListCollapse, CheckCircle2, Edit, Trash2, X } from 'lucide-react';
+import type { Question } from '../types';
 
 export const AdminQuestions: React.FC = () => {
-  const { courses, subjects, questions, addQuestion } = useAuth();
+  const { courses, subjects, questions, addQuestion, deleteQuestion, updateQuestion } = useAuth();
 
   // Form State
   const [prompt, setPrompt] = useState('');
@@ -13,6 +14,7 @@ export const AdminQuestions: React.FC = () => {
   const [options, setOptions] = useState<string[]>(['', '', '', '', '']);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
   const [successMsg, setSuccessMsg] = useState('');
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
 
   const handleOptionChange = (index: number, value: string) => {
     const updated = [...options];
@@ -20,28 +22,121 @@ export const AdminQuestions: React.FC = () => {
     setOptions(updated);
   };
 
-  const handleCreateQuestion = (e: React.FormEvent) => {
+  const handleSaveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt || !subjectId || options.some(opt => !opt.trim())) return;
+    if (!prompt || !subjectId) return;
 
-    addQuestion({
-      subjectId,
-      prompt,
-      options: options.map(opt => opt.trim()),
-      correctAnswerIndex,
-      isProOrPremium,
-      type
-    });
+    // Filtra as opções vazias mantendo a correta alinhada
+    const mappedOptions = options
+      .map((opt, idx) => ({ opt: opt.trim(), originalIdx: idx }))
+      .filter(item => item.opt !== '');
 
-    // Reset Form
+    if (mappedOptions.length < 2) {
+      alert('A questão deve ter pelo menos 2 alternativas preenchidas!');
+      return;
+    }
+
+    const correctItem = mappedOptions.find(item => item.originalIdx === correctAnswerIndex);
+    if (!correctItem) {
+      alert('A alternativa marcada como correta deve estar preenchida!');
+      return;
+    }
+
+    const finalOptions = mappedOptions.map(item => item.opt);
+    const finalCorrectAnswerIndex = mappedOptions.findIndex(item => item.originalIdx === correctAnswerIndex);
+
+    try {
+      if (editingQuestionId) {
+        await updateQuestion(editingQuestionId, {
+          subjectId,
+          prompt,
+          options: finalOptions,
+          correctAnswerIndex: finalCorrectAnswerIndex,
+          isProOrPremium,
+          type
+        });
+        setEditingQuestionId(null);
+        setSuccessMsg('Questão atualizada com sucesso!');
+      } else {
+        await addQuestion({
+          subjectId,
+          prompt,
+          options: finalOptions,
+          correctAnswerIndex: finalCorrectAnswerIndex,
+          isProOrPremium,
+          type
+        });
+        setSuccessMsg('Questão adicionada ao banco de dados!');
+      }
+
+      // Reset Form
+      setPrompt('');
+      setOptions(['', '', '', '', '']);
+      setCorrectAnswerIndex(0);
+      setIsProOrPremium(false);
+      setType('simulado');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      // Erro global já tratado no AuthContext
+    }
+  };
+
+  const handleAddOption = () => {
+    if (options.length >= 10) {
+      alert('O limite máximo é de 10 alternativas.');
+      return;
+    }
+    setOptions([...options, '']);
+  };
+
+  const handleRemoveOption = (indexToRemove: number) => {
+    if (options.length <= 2) {
+      alert('Uma questão precisa ter pelo menos 2 alternativas.');
+      return;
+    }
+    const updated = options.filter((_, idx) => idx !== indexToRemove);
+    setOptions(updated);
+    
+    // Ajustar correctAnswerIndex
+    if (correctAnswerIndex === indexToRemove) {
+      setCorrectAnswerIndex(0);
+    } else if (correctAnswerIndex > indexToRemove) {
+      setCorrectAnswerIndex(prev => prev - 1);
+    }
+  };
+
+  const handleEditClick = (q: Question) => {
+    setEditingQuestionId(q.id);
+    setPrompt(q.prompt);
+    setSubjectId(q.subjectId);
+    setType(q.type);
+    setIsProOrPremium(q.isProOrPremium);
+    setOptions(q.options);
+    setCorrectAnswerIndex(q.correctAnswerIndex);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestionId(null);
     setPrompt('');
     setOptions(['', '', '', '', '']);
     setCorrectAnswerIndex(0);
     setIsProOrPremium(false);
     setType('simulado');
-    
-    setSuccessMsg('Questão adicionada ao banco de dados!');
-    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (window.confirm('Tem certeza de que deseja excluir esta questão permanentemente?')) {
+      try {
+        await deleteQuestion(id);
+        setSuccessMsg('Questão excluída com sucesso!');
+        setTimeout(() => setSuccessMsg(''), 3000);
+        if (editingQuestionId === id) {
+          handleCancelEdit();
+        }
+      } catch (err) {
+        // Erro já tratado pelo AuthContext
+      }
+    }
   };
 
   return (
@@ -57,10 +152,21 @@ export const AdminQuestions: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form: Add Question */}
         <div className="lg:col-span-5 bg-brand-medium/10 border border-brand-medium/40 p-6 rounded-2xl shadow-xl h-fit">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2 mb-4">
-            <Plus size={16} className="text-brand-light" />
-            Adicionar Questão
-          </h3>
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-brand-medium/30">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <Plus size={16} className="text-brand-light" />
+              {editingQuestionId ? 'Editar Questão' : 'Adicionar Questão'}
+            </h3>
+            {editingQuestionId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-[10px] text-gray-400 hover:text-white flex items-center gap-1 border border-brand-medium/55 bg-brand-dark/30 px-2 py-1 rounded-lg transition-all"
+              >
+                <X size={10} /> Cancelar
+              </button>
+            )}
+          </div>
 
           {successMsg && (
             <div className="bg-green-950/35 border border-green-500/35 text-green-300 px-4 py-2.5 rounded-xl text-xs mb-4 flex items-center gap-2">
@@ -69,7 +175,7 @@ export const AdminQuestions: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleCreateQuestion} className="space-y-4">
+          <form onSubmit={handleSaveQuestion} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
                 Enunciado da Pergunta
@@ -133,8 +239,7 @@ export const AdminQuestions: React.FC = () => {
                   </span>
                   <input
                     type="text"
-                    required
-                    placeholder={`Texto da alternativa ${String.fromCharCode(65 + idx)}...`}
+                    placeholder={`Texto da alternativa ${String.fromCharCode(65 + idx)} (opcional)...`}
                     value={option}
                     onChange={(e) => handleOptionChange(idx, e.target.value)}
                     className="flex-1 bg-brand-dark border border-brand-medium/60 rounded-xl px-3.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
@@ -147,8 +252,28 @@ export const AdminQuestions: React.FC = () => {
                     title="Marcar como resposta correta"
                     className="w-4 h-4 cursor-pointer text-brand-light border-brand-medium focus:ring-0"
                   />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(idx)}
+                      title="Excluir alternativa"
+                      className="p-1.5 bg-red-950/20 hover:bg-red-900 border border-red-500/20 text-red-400 hover:text-white rounded-lg transition-all shrink-0"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                 </div>
               ))}
+
+              {options.length < 10 && (
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="mt-1 w-full bg-brand-medium/20 hover:bg-brand-medium/40 border border-brand-medium/60 text-brand-light hover:text-white py-1.5 rounded-xl text-[10px] font-bold transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Plus size={10} /> Adicionar Alternativa
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 pt-2">
@@ -168,7 +293,7 @@ export const AdminQuestions: React.FC = () => {
               type="submit"
               className="w-full bg-brand-light hover:bg-white text-brand-dark py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5"
             >
-              Adicionar Questão
+              {editingQuestionId ? 'Salvar Alterações' : 'Adicionar Questão'}
             </button>
           </form>
         </div>
@@ -186,18 +311,36 @@ export const AdminQuestions: React.FC = () => {
               return (
                 <div key={q.id} className="border border-brand-medium/40 bg-brand-dark/25 p-4 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-[10px] bg-brand-medium/55 px-2 py-0.5 rounded text-brand-light font-bold">
-                      {subject?.name}
-                    </span>
-                    <div className="flex gap-1.5 text-[8px]">
-                      <span className={`px-2 py-0.5 rounded font-bold uppercase ${q.type === 'prova' ? 'bg-yellow-600/30 text-yellow-350 border border-yellow-500/20' : 'bg-brand-medium text-brand-light border border-brand-light/10'}`}>
-                        {q.type}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-brand-medium/55 px-2 py-0.5 rounded text-brand-light font-bold">
+                        {subject?.name}
                       </span>
-                      {q.isProOrPremium && (
-                        <span className="bg-red-950 text-red-300 border border-red-500/20 px-2 py-0.5 rounded font-bold uppercase">
-                          PRO/PREMIUM
+                      <div className="flex gap-1.5 text-[8px]">
+                        <span className={`px-2 py-0.5 rounded font-bold uppercase ${q.type === 'prova' ? 'bg-yellow-600/30 text-yellow-350 border border-yellow-500/20' : 'bg-brand-medium text-brand-light border border-brand-light/10'}`}>
+                          {q.type}
                         </span>
-                      )}
+                        {q.isProOrPremium && (
+                          <span className="bg-red-950 text-red-300 border border-red-500/20 px-2 py-0.5 rounded font-bold uppercase">
+                            PRO/PREMIUM
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleEditClick(q)}
+                        title="Editar questão"
+                        className="p-1 bg-brand-medium/35 hover:bg-brand-medium border border-brand-medium text-brand-light hover:text-white rounded transition-all"
+                      >
+                        <Edit size={10} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(q.id)}
+                        title="Excluir questão"
+                        className="p-1 bg-red-950/30 hover:bg-red-900 border border-red-500/20 text-red-400 hover:text-white rounded transition-all"
+                      >
+                        <Trash2 size={10} />
+                      </button>
                     </div>
                   </div>
 

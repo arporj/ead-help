@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, FileText, CheckCircle2 } from 'lucide-react';
+import { BookOpen, FileText, CheckCircle2, Edit, Trash2, X } from 'lucide-react';
 
 export const AdminContent: React.FC = () => {
-  const { courses, subjects, summaries, addSummary } = useAuth();
+  const { courses, subjects, summaries, addSummary, deleteSummary, updateSummary } = useAuth();
 
   // Success messaging
   const [successMsg, setSuccessMsg] = useState('');
@@ -13,6 +13,7 @@ export const AdminContent: React.FC = () => {
   const [description, setDescription] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [isPremium, setIsPremium] = useState(false);
+  const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
 
   // Sync subjectId when subjects list loads or changes
   useEffect(() => {
@@ -64,25 +65,65 @@ export const AdminContent: React.FC = () => {
   });
 
   // Handlers
-  const handleCreateSummary = async (e: React.FormEvent) => {
+  const handleSaveSummary = async (e: React.FormEvent) => {
     e.preventDefault();
     const activeSubjectId = subjectId || subjects[0]?.id;
     if (!title || !description || !activeSubjectId) return;
 
     try {
-      await addSummary({
-        title,
-        description,
-        subjectId: activeSubjectId,
-        isPremium
-      });
+      if (editingSummaryId) {
+        await updateSummary(editingSummaryId, {
+          title,
+          description,
+          subjectId: activeSubjectId,
+          isPremium
+        });
+        setEditingSummaryId(null);
+        showSuccess('Resumo atualizado com sucesso!');
+      } else {
+        await addSummary({
+          title,
+          description,
+          subjectId: activeSubjectId,
+          isPremium
+        });
+        showSuccess('Resumo publicado com sucesso!');
+      }
 
       setTitle('');
       setDescription('');
       setIsPremium(false);
-      showSuccess('Resumo publicado com sucesso!');
     } catch (err) {
       // O erro global já é tratado pelo AuthContext
+    }
+  };
+
+  const handleEditClick = (sum: any) => {
+    setEditingSummaryId(sum.id);
+    setTitle(sum.title);
+    setDescription(sum.description);
+    setSubjectId(sum.subjectId);
+    setIsPremium(sum.isPremium);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSummaryId(null);
+    setTitle('');
+    setDescription('');
+    setIsPremium(false);
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (window.confirm('Tem certeza de que deseja excluir este resumo permanentemente?')) {
+      try {
+        await deleteSummary(id);
+        showSuccess('Resumo excluído com sucesso!');
+        if (editingSummaryId === id) {
+          handleCancelEdit();
+        }
+      } catch (err) {
+        // Erro já tratado pelo AuthContext
+      }
     }
   };
 
@@ -104,9 +145,22 @@ export const AdminContent: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Form Panel (col-span-5) */}
         <div className="lg:col-span-5 bg-brand-medium/10 border border-brand-medium/40 p-6 rounded-2xl shadow-xl h-fit space-y-5">
-          <div className="flex items-center gap-2 border-b border-brand-medium/30 pb-3">
-            <FileText className="w-4 h-4 text-brand-light" />
-            <h3 className="text-sm font-bold text-white font-semibold">Publicar Novo Resumo</h3>
+          <div className="flex items-center justify-between border-b border-brand-medium/30 pb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-brand-light" />
+              <h3 className="text-sm font-bold text-white font-semibold">
+                {editingSummaryId ? 'Editar Resumo' : 'Publicar Novo Resumo'}
+              </h3>
+            </div>
+            {editingSummaryId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-[10px] text-gray-400 hover:text-white flex items-center gap-1 border border-brand-medium/55 bg-brand-dark/30 px-2 py-1 rounded-lg transition-all"
+              >
+                <X size={10} /> Cancelar
+              </button>
+            )}
           </div>
 
           {successMsg && (
@@ -116,7 +170,7 @@ export const AdminContent: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleCreateSummary} className="space-y-4">
+          <form onSubmit={handleSaveSummary} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
                 Título do Resumo
@@ -195,7 +249,7 @@ export const AdminContent: React.FC = () => {
               disabled={subjects.length === 0}
               className="w-full bg-brand-light hover:bg-white text-brand-dark py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-brand-light/5"
             >
-              Publicar Resumo
+              {editingSummaryId ? 'Salvar Alterações' : 'Publicar Resumo'}
             </button>
           </form>
         </div>
@@ -323,7 +377,7 @@ export const AdminContent: React.FC = () => {
 
                   return (
                     <div key={sum.id} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl flex items-start justify-between gap-4">
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-bold text-xs text-white">{sum.title}</h4>
                           {sum.isPremium ? (
@@ -340,6 +394,22 @@ export const AdminContent: React.FC = () => {
                         <div className="text-[9px] text-brand-light font-medium pt-1">
                           {course?.name || 'Curso Não Identificado'} &bull; {subject?.name || 'Disciplina Deletada'} {subject ? `(Semestre ${subject.semester})` : ''}
                         </div>
+                      </div>
+                      <div className="flex gap-2 self-center shrink-0">
+                        <button
+                          onClick={() => handleEditClick(sum)}
+                          title="Editar resumo"
+                          className="p-1.5 bg-brand-medium/35 hover:bg-brand-medium border border-brand-medium text-brand-light hover:text-white rounded-lg transition-all"
+                        >
+                          <Edit size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(sum.id)}
+                          title="Excluir resumo"
+                          className="p-1.5 bg-red-950/30 hover:bg-red-900 border border-red-500/20 text-red-400 hover:text-white rounded-lg transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </div>
                   );

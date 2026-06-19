@@ -24,6 +24,10 @@ interface AuthContextType {
   toggleAiAccess: (studentId: string) => Promise<void>;
   addQuestion: (question: Omit<Question, 'id'>) => Promise<void>;
   addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>) => Promise<void>;
+  deleteSummary: (id: string) => Promise<void>;
+  updateSummary: (id: string, summary: Partial<Omit<Summary, 'id' | 'pdfUrl'>>) => Promise<void>;
+  deleteQuestion: (id: string) => Promise<void>;
+  updateQuestion: (id: string, question: Omit<Question, 'id'>) => Promise<void>;
   addCourse: (name: string) => Promise<void>;
   addSubject: (name: string, courseId: string, semester: number) => Promise<void>;
   deleteCourse: (id: string) => Promise<void>;
@@ -647,6 +651,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
+  const deleteSummary = async (id: string) => {
+    const { error } = await supabase
+      .from('summaries')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      handleError('Excluir Resumo', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const updateSummary = async (id: string, summaryData: Partial<Omit<Summary, 'id' | 'pdfUrl'>>) => {
+    const { error } = await supabase
+      .from('summaries')
+      .update({
+        subject_id: summaryData.subjectId,
+        title: summaryData.title,
+        description: summaryData.description,
+        is_premium: summaryData.isPremium
+      })
+      .eq('id', id);
+    if (error) {
+      handleError('Atualizar Resumo', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const deleteQuestion = async (id: string) => {
+    const { error } = await supabase
+      .from('questions')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      handleError('Excluir Questão', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const updateQuestion = async (id: string, questionData: Omit<Question, 'id'>) => {
+    const { error } = await supabase
+      .from('questions')
+      .update({
+        subject_id: questionData.subjectId,
+        prompt: questionData.prompt,
+        options: questionData.options,
+        correct_answer_index: questionData.correctAnswerIndex,
+        is_pro_or_premium: questionData.isProOrPremium,
+        type: questionData.type
+      })
+      .eq('id', id);
+    if (error) {
+      handleError('Atualizar Questão', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
   const addCourse = async (name: string) => {
     const { error } = await supabase
       .from('courses')
@@ -931,6 +995,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleAiAccess,
         addQuestion,
         addSummary,
+        deleteSummary,
+        updateSummary,
+        deleteQuestion,
+        updateQuestion,
         addCourse,
         addSubject,
         deleteCourse,
