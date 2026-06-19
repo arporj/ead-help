@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, FileText, CheckCircle2 } from 'lucide-react';
 
@@ -11,8 +11,15 @@ export const AdminContent: React.FC = () => {
   // Form State: Summary
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
+  const [subjectId, setSubjectId] = useState('');
   const [isPremium, setIsPremium] = useState(false);
+
+  // Sync subjectId when subjects list loads or changes
+  useEffect(() => {
+    if (subjects.length > 0 && (!subjectId || !subjects.some(s => s.id === subjectId))) {
+      setSubjectId(subjects[0].id);
+    }
+  }, [subjects, subjectId]);
 
   // Filter States for Published Summaries
   const [filterCourseId, setFilterCourseId] = useState<string>('all');

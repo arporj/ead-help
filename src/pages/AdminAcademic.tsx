@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { BookOpenCheck, CheckCircle2, BookOpen, Layers } from 'lucide-react';
 
@@ -13,8 +13,15 @@ export const AdminAcademic: React.FC = () => {
 
   // Form State: Subject
   const [subjectName, setSubjectName] = useState('');
-  const [subjectCourseId, setSubjectCourseId] = useState(courses[0]?.id || '');
+  const [subjectCourseId, setSubjectCourseId] = useState('');
   const [subjectSemester, setSubjectSemester] = useState(1);
+
+  // Sync subjectCourseId when courses list loads or changes
+  useEffect(() => {
+    if (courses.length > 0 && (!subjectCourseId || !courses.some(c => c.id === subjectCourseId))) {
+      setSubjectCourseId(courses[0].id);
+    }
+  }, [courses, subjectCourseId]);
 
   // Handlers
   const handleCreateCourse = async (e: React.FormEvent) => {
@@ -24,11 +31,6 @@ export const AdminAcademic: React.FC = () => {
     try {
       await addCourse(courseName.trim());
       
-      // Auto update course selectors
-      if (!subjectCourseId && courses.length === 0) {
-        setSubjectCourseId(`c-${Date.now()}`); 
-      }
-
       setCourseName('');
       showSuccess('Curso cadastrado com sucesso!');
     } catch (err) {
