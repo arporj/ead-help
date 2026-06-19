@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
 
         if (signInErr) {
           if (signInErr.message.includes('Email not confirmed') || signInErr.message.includes('email_not_confirmed')) {
-            throw new Error('Confirmação de e-mail pendente. Por favor, verifique a sua caixa de entrada e clique no link enviado para ativar a sua conta antes de fazer login.');
+            throw new Error('Confirmação de e-mail pendente. Por favor, verifique a sua caixa de entrada para ativar a sua conta. Se não recebeu o e-mail, entre em contato em suporte@helpead.com.br.');
           }
           throw signInErr;
         }
@@ -82,7 +82,16 @@ export const Login: React.FC = () => {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro no processamento.');
+      const errMsg = err.message || '';
+      if (
+        errMsg.toLowerCase().includes('error sending confirmation email') ||
+        errMsg.toLowerCase().includes('smtp') ||
+        errMsg.toLowerCase().includes('fail')
+      ) {
+        setError('O e-mail de confirmação de cadastro não pôde ser enviado. Por favor, entre em contato conosco em suporte@helpead.com.br para que possamos ativar a sua conta manualmente.');
+      } else {
+        setError(err.message || 'Ocorreu um erro no processamento.');
+      }
     } finally {
       setLoading(false);
     }
