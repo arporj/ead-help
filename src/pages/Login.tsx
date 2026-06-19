@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle } from 'lucide-react';
+import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
@@ -15,6 +15,14 @@ export const Login: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Password validation checks
+  const meetsMinLength = password.length >= 6;
+  const meetsUppercase = /[A-Z]/.test(password);
+  const meetsLowercase = /[a-z]/.test(password);
+  const meetsNumber = /[0-9]/.test(password);
+  const meetsSpecialChar = /[^A-Za-z0-9]/.test(password);
+  const isPasswordValid = meetsMinLength && meetsUppercase && meetsLowercase && meetsNumber && meetsSpecialChar;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -27,6 +35,11 @@ export const Login: React.FC = () => {
 
     if (isSignUp && !fullName) {
       setError('Por favor, informe seu nome completo.');
+      return;
+    }
+
+    if (isSignUp && !isPasswordValid) {
+      setError('Por favor, defina uma senha que atenda a todos os requisitos de segurança obrigatórios.');
       return;
     }
 
@@ -233,8 +246,49 @@ export const Login: React.FC = () => {
               placeholder="Digite sua senha"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
+              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
             />
+            {isSignUp && password.length > 0 && (
+              <div className="mt-2.5 p-3 bg-brand-dark/50 border border-brand-medium/40 rounded-xl space-y-1.5 text-[11px] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
+                <span className="block font-bold text-brand-light uppercase tracking-wider mb-1">Requisitos da Senha:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                  <div className="flex items-center gap-2 transition-all">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${meetsMinLength ? 'bg-green-500/20 border-green-500 text-green-400 scale-110 shadow-[0_0_8px_rgba(34,197,94,0.2)]' : 'border-brand-medium/40 text-gray-500 bg-brand-dark/30'}`}>
+                      <Check size={10} className={`transition-opacity duration-200 ${meetsMinLength ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                    <span className={`transition-colors duration-200 ${meetsMinLength ? 'text-white font-medium' : 'text-gray-400'}`}>No mínimo 6 caracteres</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 transition-all">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${meetsUppercase ? 'bg-green-500/20 border-green-500 text-green-400 scale-110 shadow-[0_0_8px_rgba(34,197,94,0.2)]' : 'border-brand-medium/40 text-gray-500 bg-brand-dark/30'}`}>
+                      <Check size={10} className={`transition-opacity duration-200 ${meetsUppercase ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                    <span className={`transition-colors duration-200 ${meetsUppercase ? 'text-white font-medium' : 'text-gray-400'}`}>Uma letra maiúscula</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 transition-all">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${meetsLowercase ? 'bg-green-500/20 border-green-500 text-green-400 scale-110 shadow-[0_0_8px_rgba(34,197,94,0.2)]' : 'border-brand-medium/40 text-gray-500 bg-brand-dark/30'}`}>
+                      <Check size={10} className={`transition-opacity duration-200 ${meetsLowercase ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                    <span className={`transition-colors duration-200 ${meetsLowercase ? 'text-white font-medium' : 'text-gray-400'}`}>Uma letra minúscula</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 transition-all">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${meetsNumber ? 'bg-green-500/20 border-green-500 text-green-400 scale-110 shadow-[0_0_8px_rgba(34,197,94,0.2)]' : 'border-brand-medium/40 text-gray-500 bg-brand-dark/30'}`}>
+                      <Check size={10} className={`transition-opacity duration-200 ${meetsNumber ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                    <span className={`transition-colors duration-200 ${meetsNumber ? 'text-white font-medium' : 'text-gray-400'}`}>Pelo menos um número</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 transition-all">
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${meetsSpecialChar ? 'bg-green-500/20 border-green-500 text-green-400 scale-110 shadow-[0_0_8px_rgba(34,197,94,0.2)]' : 'border-brand-medium/40 text-gray-500 bg-brand-dark/30'}`}>
+                      <Check size={10} className={`transition-opacity duration-200 ${meetsSpecialChar ? 'opacity-100' : 'opacity-0'}`} />
+                    </span>
+                    <span className={`transition-colors duration-200 ${meetsSpecialChar ? 'text-white font-medium' : 'text-gray-400'}`}>Um caractere especial</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <button 
