@@ -25,6 +25,13 @@ interface AuthContextType {
   addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>) => Promise<void>;
   addCourse: (name: string) => Promise<void>;
   addSubject: (name: string, courseId: string, semester: number) => Promise<void>;
+  deleteCourse: (id: string) => Promise<void>;
+  updateCourse: (id: string, name: string) => Promise<void>;
+  deleteSubject: (id: string) => Promise<void>;
+  updateSubject: (id: string, name: string, semester: number) => Promise<void>;
+  deleteSummariesBySubject: (subjectId: string) => Promise<void>;
+  deleteQuestionsBySubject: (subjectId: string) => Promise<void>;
+  clearCourseContent: (courseId: string) => Promise<void>;
   addAiFile: (fileName: string, fileSize: string) => Promise<void>;
   removeAiFile: (id: string) => Promise<void>;
   sendSupportMessage: (message: string) => Promise<void>;
@@ -616,6 +623,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
+  const deleteCourse = async (id: string) => {
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      handleError('Excluir Curso', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const updateCourse = async (id: string, name: string) => {
+    const { error } = await supabase
+      .from('courses')
+      .update({ name })
+      .eq('id', id);
+    if (error) {
+      handleError('Atualizar Curso', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const deleteSubject = async (id: string) => {
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      handleError('Excluir Disciplina', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const updateSubject = async (id: string, name: string, semester: number) => {
+    const { error } = await supabase
+      .from('subjects')
+      .update({ name, semester })
+      .eq('id', id);
+    if (error) {
+      handleError('Atualizar Disciplina', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const deleteSummariesBySubject = async (subjectId: string) => {
+    const { error } = await supabase
+      .from('summaries')
+      .delete()
+      .eq('subject_id', subjectId);
+    if (error) {
+      handleError('Excluir Resumos da Disciplina', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const deleteQuestionsBySubject = async (subjectId: string) => {
+    const { error } = await supabase
+      .from('questions')
+      .delete()
+      .eq('subject_id', subjectId);
+    if (error) {
+      handleError('Excluir Questões da Disciplina', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
+  const clearCourseContent = async (courseId: string) => {
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('course_id', courseId);
+    if (error) {
+      handleError('Limpar Conteúdos do Curso', error);
+      throw error;
+    }
+    if (user) await loadData(user.id, user.role);
+  };
+
   const addAiFile = async (fileName: string, _fileSize: string) => {
     const { error } = await supabase
       .from('ai_knowledge_files')
@@ -791,6 +882,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addSummary,
         addCourse,
         addSubject,
+        deleteCourse,
+        updateCourse,
+        deleteSubject,
+        updateSubject,
+        deleteSummariesBySubject,
+        deleteQuestionsBySubject,
+        clearCourseContent,
         addAiFile,
         removeAiFile,
         sendSupportMessage,
