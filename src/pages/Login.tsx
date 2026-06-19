@@ -90,7 +90,25 @@ export const Login: React.FC = () => {
       ) {
         setError('O e-mail de confirmação de cadastro não pôde ser enviado. Por favor, entre em contato conosco em suporte@helpead.com.br para que possamos ativar a sua conta manualmente.');
       } else {
-        setError(err.message || 'Ocorreu um erro no processamento.');
+        let friendlyMessage = 'Ocorreu um erro no processamento. Por favor, tente novamente.';
+        
+        if (errMsg.includes('Invalid login credentials')) {
+          friendlyMessage = 'E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.';
+        } else if (errMsg.includes('User not found') || errMsg.includes('User does not exist')) {
+          friendlyMessage = 'Usuário não encontrado. Cadastre-se ou verifique o e-mail digitado.';
+        } else if (errMsg.includes('Invalid email') || errMsg.includes('invalid_email')) {
+          friendlyMessage = 'E-mail em formato inválido. Por favor, digite um endereço de e-mail válido.';
+        } else if (errMsg.includes('Password should be')) {
+          friendlyMessage = 'A senha deve conter pelo menos 6 caracteres.';
+        } else if (errMsg.includes('User already registered') || errMsg.includes('already exists')) {
+          friendlyMessage = 'Este endereço de e-mail já está cadastrado. Faça login ou tente outro e-mail.';
+        } else if (errMsg.toLowerCase().includes('fetch') || errMsg.toLowerCase().includes('network') || errMsg.toLowerCase().includes('connection')) {
+          friendlyMessage = 'Erro de rede. Verifique sua conexão com a internet e tente novamente.';
+        } else if (errMsg) {
+          friendlyMessage = errMsg;
+        }
+        
+        setError(friendlyMessage);
       }
     } finally {
       setLoading(false);
