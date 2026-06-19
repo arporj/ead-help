@@ -14,6 +14,7 @@ interface AuthContextType {
   aiKnowledgeFiles: AIKnowledgeFile[];
   systemUsers: SystemUser[];
   globalError: string | null;
+  loading: boolean;
   clearGlobalError: () => void;
   loginAs: (roleOrEmail: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -58,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [aiKnowledgeFiles, setAiKnowledgeFiles] = useState<AIKnowledgeFile[]>([]);
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const clearGlobalError = () => setGlobalError(null);
 
@@ -246,6 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!session) {
       setUser(null);
       setStudentProfile(null);
+      setLoading(false);
       return;
     }
 
@@ -346,6 +349,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await loadData(suUser.id, profile.role);
     } catch (e) {
       console.error('Erro no processamento da sessão:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -364,6 +369,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  // Monitoramento de inatividade do usuário (Expiração em 2 horas)
+  useEffect(() => {
+    if (!user) {
+      localStorage.removeItem('eadhelp_last_activity');
+      return;
+    }
+
+    // Registrar atividade inicial
+    localStorage.setItem('eadhelp_last_activity', Date.now().toString());
+
+    const updateActivity = () => {
+      localStorage.setItem('eadhelp_last_activity', Date.now().toString());
+    };
+
+    // Eventos de interação humana a serem monitorados
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, updateActivity);
+    });
+
+    // Verificação periódica a cada 10 segundos
+    const intervalId = setInterval(() => {
+      const lastActivityStr = localStorage.getItem('eadhelp_last_activity');
+      if (lastActivityStr) {
+        const lastActivity = parseInt(lastActivityStr, 10);
+        const now = Date.now();
+        const diffMs = now - lastActivity;
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours >= 2) {
+          console.log('Sessão expirada por inatividade de 2 horas.');
+          logout();
+        }
+      }
+    }, 10000);
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+      clearInterval(intervalId);
+    };
+  }, [user]);
 
   // Login de simulação adaptado ao Supabase
   const loginAs = async (roleOrEmail: string) => {
@@ -871,6 +920,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         aiKnowledgeFiles,
         systemUsers,
         globalError,
+        loading,
         clearGlobalError,
         loginAs,
         logout,
