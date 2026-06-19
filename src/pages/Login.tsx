@@ -248,7 +248,7 @@ export const Login: React.FC = () => {
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
               className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
             />
-            {isSignUp && password.length > 0 && (
+            {isSignUp && (
               <div className="mt-2.5 p-3 bg-brand-dark/50 border border-brand-medium/40 rounded-xl space-y-1.5 text-[11px] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
                 <span className="block font-bold text-brand-light uppercase tracking-wider mb-1">Requisitos da Senha:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
