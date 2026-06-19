@@ -10,7 +10,7 @@ export const AdminQuestions: React.FC = () => {
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
   const [type, setType] = useState<'simulado' | 'prova'>('simulado');
   const [isProOrPremium, setIsProOrPremium] = useState(false);
-  const [options, setOptions] = useState<string[]>(['', '', '', '']);
+  const [options, setOptions] = useState<string[]>(['', '', '', '', '']);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -35,7 +35,7 @@ export const AdminQuestions: React.FC = () => {
 
     // Reset Form
     setPrompt('');
-    setOptions(['', '', '', '']);
+    setOptions(['', '', '', '', '']);
     setCorrectAnswerIndex(0);
     setIsProOrPremium(false);
     setType('simulado');
