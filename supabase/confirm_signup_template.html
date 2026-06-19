@@ -10,7 +10,7 @@
       padding: 0;
       width: 100% !important;
       height: 100% !important;
-      background-color: #f4f6f8;
+      background-color: #f8fafc;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
     }
@@ -20,45 +20,45 @@
     .wrapper {
       width: 100%;
       table-layout: fixed;
-      background-color: #f4f6f8;
+      background-color: #f8fafc;
       padding-top: 40px;
       padding-bottom: 40px;
     }
     .card {
       width: 100%;
       max-width: 600px;
-      background-color: #0b1329;
+      background-color: #00142f;
       border-radius: 16px;
-      border: 1px solid #1e293b;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border: 1px solid #324F6E;
+      box-shadow: 0 10px 25px rgba(0, 20, 47, 0.25);
       overflow: hidden;
       margin: 0 auto;
     }
     .accent-bar {
       height: 6px;
-      background: linear-gradient(90deg, #10b981 0%, #0d9488 100%);
+      background: linear-gradient(90deg, #819EBC 0%, #324F6E 100%);
     }
     .header {
-      padding: 32px 32px 20px 32px;
+      padding: 36px 32px 20px 32px;
       text-align: center;
     }
     .logo-text {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
       color: #ffffff;
       letter-spacing: -0.5px;
       margin: 0;
     }
     .logo-accent {
-      color: #10b981;
+      color: #819EBC;
     }
     .content {
-      padding: 20px 32px 32px 32px;
-      color: #e2e8f0;
+      padding: 20px 36px 36px 36px;
+      color: #f3f4f6;
       line-height: 1.6;
     }
     .title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       color: #ffffff;
       margin-top: 0;
@@ -66,42 +66,42 @@
       text-align: center;
     }
     .text {
-      font-size: 15px;
-      color: #94a3b8;
+      font-size: 14px;
+      color: #819EBC;
       margin-bottom: 24px;
     }
     .button-container {
       text-align: center;
-      margin-top: 30px;
-      margin-bottom: 30px;
+      margin-top: 32px;
+      margin-bottom: 32px;
     }
     .btn {
       display: inline-block;
-      background-color: #10b981;
-      color: #0b1329 !important;
-      font-size: 15px;
+      background-color: #819EBC;
+      color: #00142f !important;
+      font-size: 14px;
       font-weight: 700;
       text-decoration: none;
-      padding: 14px 32px;
+      padding: 14px 36px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      box-shadow: 0 4px 12px rgba(129, 158, 188, 0.25);
       transition: all 0.2s ease-in-out;
     }
     .btn:hover {
       background-color: #ffffff;
-      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.3);
     }
     .features {
-      background-color: rgba(16, 185, 129, 0.05);
-      border: 1px solid rgba(16, 185, 129, 0.15);
+      background-color: rgba(129, 158, 188, 0.05);
+      border: 1px solid rgba(129, 158, 188, 0.15);
       border-radius: 12px;
       padding: 20px;
-      margin-top: 24px;
+      margin-top: 28px;
     }
     .features-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      color: #10b981;
+      color: #819EBC;
       margin-top: 0;
       margin-bottom: 12px;
       text-transform: uppercase;
@@ -109,8 +109,11 @@
     }
     .feature-item {
       font-size: 13px;
-      color: #94a3b8;
+      color: #f3f4f6;
       margin-bottom: 8px;
+    }
+    .feature-item strong {
+      color: #819EBC;
     }
     .feature-item:last-child {
       margin-bottom: 0;
@@ -119,12 +122,13 @@
       padding: 24px 32px;
       text-align: center;
       font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid #1e293b;
-      background-color: #070c1b;
+      color: #819EBC;
+      border-top: 1px solid #324F6E;
+      background-color: #000c1d;
+      opacity: 0.85;
     }
     .footer-link {
-      color: #10b981;
+      color: #819EBC;
       text-decoration: none;
     }
   </style>
@@ -132,7 +136,7 @@
 <body>
   <center class="wrapper">
     <table class="card" width="100%" cellpadding="0" cellspacing="0">
-      <!-- Barra decorativa de gradiente verde-água no topo -->
+      <!-- Barra decorativa de gradiente da marca no topo -->
       <tr>
         <td class="accent-bar"></td>
       </tr>
@@ -149,22 +153,22 @@
         <td class="content">
           <h2 class="title">Confirme seu endereço de e-mail</h2>
           
-          <p class="text">
-            Olá! Obrigado por se cadastrar no <strong>Help EAD</strong>. Estamos muito felizes em ter você conosco na jornada rumo à aprovação máxima nos seus estudos acadêmicos.
+          <p class="text" style="color: #f3f4f6;">
+            Olá! Obrigado por se cadastrar no <strong>Help EAD</strong>. Estamos felizes em apoiar você na jornada de preparação para os seus exames acadêmicos.
           </p>
           
-          <p class="text" style="text-align: center;">
-            Para ativar sua conta e acessar instantaneamente seus simulados e resumos dirigidos, clique no botão de ativação abaixo:
+          <p class="text" style="text-align: center; color: #f3f4f6;">
+            Para ativar sua conta e liberar o acesso aos simulados e resumos dirigidos, clique no link de confirmação abaixo:
           </p>
           
           <!-- Botão de Ação -->
           <div class="button-container">
-            <a href="{{ .ConfirmationURL }}" class="btn">Confirmar meu E-mail</a>
+            <a href="{{ .ConfirmationURL }}" class="btn">Confirmar E-mail</a>
           </div>
           
-          <p class="text" style="font-size: 13px; text-align: center; color: #64748b;">
+          <p class="text" style="font-size: 12px; text-align: center; color: #819EBC; margin-bottom: 0;">
             Se o botão acima não funcionar, copie e cole o link a seguir no seu navegador:<br>
-            <a href="{{ .ConfirmationURL }}" style="color: #10b981; word-break: break-all;">{{ .ConfirmationURL }}</a>
+            <a href="{{ .ConfirmationURL }}" style="color: #819EBC; word-break: break-all; text-decoration: underline;">{{ .ConfirmationURL }}</a>
           </p>
           
           <!-- Recursos inclusos no portal -->
@@ -181,8 +185,8 @@
       <!-- Rodapé -->
       <tr>
         <td class="footer">
-          <p style="margin: 0 0 8px 0;">Help EAD - Preparação Inteligente para Provas Universitárias.</p>
-          <p style="margin: 0;">Você recebeu este e-mail porque se cadastrou na nossa plataforma. Se não foi você, por favor desconsidere.</p>
+          <p style="margin: 0 0 8px 0; color: #ffffff;">Help EAD - Preparação Inteligente para Provas Universitárias.</p>
+          <p style="margin: 0; font-size: 11px;">Você recebeu este e-mail porque se cadastrou na nossa plataforma. Se não realizou esta ação, por favor desconsidere.</p>
         </td>
       </tr>
     </table>
