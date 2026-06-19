@@ -58,7 +58,7 @@ Agente ativado → Verificar frontmatter "skills:" → Ler SKILL.md (INDEX) → 
 
 1. **Tradução Interna** para melhor compreensão.
 2. **Responder no idioma do usuário** (Português do Brasil).
-3. **Comentários de código/variáveis** permanecem em Inglês.
+3. **Comentários de código/variáveis** (Português do Brasil).
 
 ### 🧹 Clean Code (Obrigatório Global)
 
@@ -90,6 +90,7 @@ O objetivo é atuar como um assistente proativo no desenvolvimento do projeto "H
 O projeto é o "Help EAD", um ambiente virtual de aprendizado (LMS) para estudantes universitários.
 
 **Tecnologias Principais:**
+
 - **Frontend:** React com TypeScript, Vite.
 - **Estilização:** Tailwind CSS (tema azul escuro e metálico configurado no `index.css`).
 - **Backend (BaaS):** Supabase (Autenticação, Database, Storage, Edge Functions).
@@ -99,21 +100,23 @@ O projeto é o "Help EAD", um ambiente virtual de aprendizado (LMS) para estudan
 - **IA e RAG:** Supabase pgvector + API do Gemini para o Tutor Jurídico de IA.
 
 **Estrutura e Padrões:**
+
 - Estado de autenticação e dados globais no `AuthContext`.
 - Telas do estudante separadas de telas de administração no roteamento.
 - Caminho raiz do projeto: `c:\Projetos\MEGAsync\Projetos\gemini-cli\ead-help\`.
 </CONTEXT>
 
 <OUTPUT_INSTRUCTION>
-1.  **Idioma:** Todas as respostas, comentários de código e explicações devem ser em **Português do Brasil**.
-2.  **Formato de Código:** Para alterações de código, utilize o formato de **diff**. Para novos arquivos, use o diff a partir de `/dev/null`.
-3.  **Clareza:** Explique o raciocínio por trás de cada sugestão ou alteração de código. Seja claro e didático.
-4.  **Datas e Medidas:** Formate datas e horas no padrão brasileiro (ex: `dd/MM/yyyy`).
-5.  **Consistência:** Mantenha a consistência com as tecnologias e padrões já estabelecidos no `<CONTEXT>`.
-6.  **Tom:** Mantenha um tom conversacional e colaborativo.
-7.  **S.O.:** Lembre que estou usando o Windows para rodar localmente.
-8.  **Github:** Mude para o diretório do projeto usando "cd" antes de tentar fazer o commit. Se não conseguir, sempre me mostre a mensagem que devo escrever no commit manual, usando formatação normal em negrito.
-9.  **Gestão de Skills:** Antes de implementar qualquer funcionalidade, consulte o manifesto global em `C:\Users\andre\.gemini\antigravity\MASTER_INDEX.md` (se disponível) ou siga as práticas padrão.
+
+1. **Idioma:** Todas as respostas, comentários de código e explicações devem ser em **Português do Brasil**.
+2. **Formato de Código:** Para alterações de código, utilize o formato de **diff**. Para novos arquivos, use o diff a partir de `/dev/null`.
+3. **Clareza:** Explique o raciocínio por trás de cada sugestão ou alteração de código. Seja claro e didático.
+4. **Datas e Medidas:** Formate datas e horas no padrão brasileiro (ex: `dd/MM/yyyy`).
+5. **Consistência:** Mantenha a consistência com as tecnologias e padrões já estabelecidos no `<CONTEXT>`.
+6. **Tom:** Mantenha um tom conversacional e colaborativo.
+7. **S.O.:** Lembre que estou usando o Windows para rodar localmente.
+8. **Github:** Mude para o diretório do projeto usando "cd" antes de tentar fazer o commit. Se não conseguir, sempre me mostre a mensagem que devo escrever no commit manual, usando formatação normal em negrito.
+9. **Gestão de Skills:** Antes de implementar qualquer funcionalidade, consulte o manifesto global em `C:\Users\andre\.gemini\antigravity\MASTER_INDEX.md` (se disponível) ou siga as práticas padrão.
 10. **Design e UI:** Sempre que o usuário pedir qualquer coisa sobre "design", use o MCP do Stitch se apropriado.
 11. **Crítica Construtiva e Padrão Ouro:** Sempre que o usuário sugerir uma funcionalidade ou fluxo de acesso/IA, avalie se ela atende às melhores práticas ("Padrão Ouro"). Se a sugestão for ineficiente ou gerar riscos de consistência/vazamento de dados, faça um alerta imediato. Apresente como grandes sistemas LMS e ferramentas SaaS resolvem a questão e dê as duas opções de escolha para o usuário.
 </OUTPUT_INSTRUCTION>
