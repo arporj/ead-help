@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loginAs, logout } = useAuth();
+  const { user, loginAs, logout, globalError, clearGlobalError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -290,6 +290,26 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             >
               <span>⚙️ Administrador</span>
               <span className="text-[10px] bg-brand-dark px-1.5 py-0.5 rounded text-brand-light border border-brand-light/20">Acesso Total</span>
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Global Error Modal */}
+      {globalError && (
+        <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-brand-dark border-2 border-red-500/35 p-6 rounded-2xl max-w-sm w-full space-y-4 text-center shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-red-950/30 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+              <ShieldAlert size={24} className="animate-pulse" />
+            </div>
+            <h4 className="font-bold text-white text-sm">Ops! Ocorreu um Erro</h4>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              {globalError}
+            </p>
+            <button
+              onClick={clearGlobalError}
+              className="w-full bg-brand-medium hover:bg-brand-medium/80 text-white font-bold py-2 rounded-xl text-xs transition-all cursor-pointer"
+            >
+              Fechar
             </button>
           </div>
         </div>

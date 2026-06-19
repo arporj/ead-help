@@ -13,6 +13,8 @@ interface AuthContextType {
   supportMessages: SupportMessage[];
   aiKnowledgeFiles: AIKnowledgeFile[];
   systemUsers: SystemUser[];
+  globalError: string | null;
+  clearGlobalError: () => void;
   loginAs: (roleOrEmail: string) => Promise<void>;
   logout: () => Promise<void>;
   updateStudentPlan: (studentId: string, plan: 'basic' | 'pro' | 'premium') => Promise<void>;
@@ -48,6 +50,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([]);
   const [aiKnowledgeFiles, setAiKnowledgeFiles] = useState<AIKnowledgeFile[]>([]);
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const clearGlobalError = () => setGlobalError(null);
+
+  const handleError = (actionName: string, error: any) => {
+    console.error(`Erro em ${actionName}:`, error);
+    const message = error?.message || 'Ocorreu uma falha inesperada.';
+    let friendlyMessage = `Erro ao realizar a operação (${actionName}): ${message}`;
+    
+    if (message.includes('row-level security') || message.includes('policy') || message.includes('violates')) {
+      friendlyMessage = `Você não tem permissão para realizar esta ação (${actionName}). Por favor, verifique seu nível de acesso ou entre em contato com suporte@helpead.com.br.`;
+    } else if (message.includes('fetch') || message.includes('network') || message.includes('connection')) {
+      friendlyMessage = `Erro de conexão. Verifique sua conexão de internet e tente novamente. Se o problema persistir, fale com suporte@helpead.com.br.`;
+    }
+    
+    setGlobalError(friendlyMessage);
+  };
 
   // Carrega todos os dados do Supabase
   const loadData = async (userId: string, userRole: 'admin' | 'student') => {
@@ -212,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (e) {
-      console.error('Erro ao carregar dados do Supabase:', e);
+      handleError('Carregar Dados', e);
     }
   };
 
@@ -438,7 +457,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('students')
       .update({ plan })
       .eq('id', studentId);
-    if (error) console.error('Erro ao atualizar plano:', error);
+    if (error) {
+      handleError('Atualizar Plano do Estudante', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -451,28 +473,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .maybeSingle();
 
     if (existing) {
-      await supabase
+      const { error } = await supabase
         .from('summary_access')
         .delete()
         .eq('student_id', studentId)
         .eq('summary_id', summaryId);
+      if (error) {
+        handleError('Revogar Acesso ao Resumo', error);
+        throw error;
+      }
     } else {
-      await supabase
+      const { error } = await supabase
         .from('summary_access')
         .insert({
           student_id: studentId,
           summary_id: summaryId,
           granted_by: user?.id
         });
+      if (error) {
+        handleError('Conceder Acesso ao Resumo', error);
+        throw error;
+      }
     }
     if (user) await loadData(user.id, user.role);
   };
 
   const updateStudentSummaryAccess = async (studentId: string, summaryIds: string[]) => {
-    await supabase
+    const { error: deleteErr } = await supabase
       .from('summary_access')
       .delete()
       .eq('student_id', studentId);
+    
+    if (deleteErr) {
+      handleError('Limpar Acessos a Resumos', deleteErr);
+      throw deleteErr;
+    }
 
     if (summaryIds.length > 0) {
       const inserts = summaryIds.map(sid => ({
@@ -480,7 +515,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         summary_id: sid,
         granted_by: user?.id
       }));
-      await supabase.from('summary_access').insert(inserts);
+      const { error: insertErr } = await supabase.from('summary_access').insert(inserts);
+      if (insertErr) {
+        handleError('Gravar Acessos a Resumos', insertErr);
+        throw insertErr;
+      }
     }
     if (user) await loadData(user.id, user.role);
   };
@@ -493,17 +532,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .maybeSingle();
 
     if (existing) {
-      await supabase
+      const { error } = await supabase
         .from('ai_consultant_access')
         .delete()
         .eq('student_id', studentId);
+      if (error) {
+        handleError('Revogar Acesso à IA', error);
+        throw error;
+      }
     } else {
-      await supabase
+      const { error } = await supabase
         .from('ai_consultant_access')
         .insert({
           student_id: studentId,
           granted_by: user?.id
         });
+      if (error) {
+        handleError('Conceder Acesso à IA', error);
+        throw error;
+      }
     }
     if (user) await loadData(user.id, user.role);
   };
@@ -519,7 +566,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_pro_or_premium: questionData.isProOrPremium,
         type: questionData.type
       });
-    if (error) console.error('Erro ao adicionar questão:', error);
+    if (error) {
+      handleError('Adicionar Questão', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -533,7 +583,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         pdf_url: '#',
         is_premium: summaryData.isPremium
       });
-    if (error) console.error('Erro ao adicionar resumo:', error);
+    if (error) {
+      handleError('Adicionar Resumo', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -541,7 +594,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase
       .from('courses')
       .insert({ name });
-    if (error) console.error('Erro ao adicionar curso:', error);
+    if (error) {
+      handleError('Adicionar Curso', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -553,7 +609,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         course_id: courseId,
         semester
       });
-    if (error) console.error('Erro ao adicionar matéria:', error);
+    if (error) {
+      handleError('Adicionar Disciplina', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -564,7 +623,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: fileName,
         url: '#'
       });
-    if (error) console.error('Erro ao adicionar arquivo IA:', error);
+    if (error) {
+      handleError('Adicionar Arquivo à IA', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -573,7 +635,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('ai_knowledge_files')
       .delete()
       .eq('id', id);
-    if (error) console.error('Erro ao remover arquivo IA:', error);
+    if (error) {
+      handleError('Remover Arquivo da IA', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -585,7 +650,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         full_name: fullName,
         permissions: { all: true }
       });
-    if (error) console.error('Erro ao adicionar usuário do sistema:', error);
+    if (error) {
+      handleError('Adicionar Administrador', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -598,16 +666,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (existing && existing.id) {
-        // Rebaixar o perfil para estudante em profiles
-        await supabase
+        const { error: profileErr } = await supabase
           .from('profiles')
           .update({ role: 'student' })
           .eq('id', existing.id);
+        if (profileErr) throw profileErr;
 
-        // Inserir registro na tabela de estudantes
-        await supabase
+        const { error: studentErr } = await supabase
           .from('students')
           .upsert({ id: existing.id, plan: 'basic', lgpd_ranking_consent: false });
+        if (studentErr) throw studentErr;
       }
 
       const { error } = await supabase
@@ -615,9 +683,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .delete()
         .eq('email', email);
 
-      if (error) console.error('Erro ao remover usuário do sistema:', error);
+      if (error) throw error;
     } catch (e) {
-      console.error(e);
+      handleError('Remover Administrador', e);
+      throw e;
     }
     if (user) await loadData(user.id, user.role);
   };
@@ -627,7 +696,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       new_supra_email: newSupraEmail
     });
     if (error) {
-      console.error('Erro ao transferir status de Supra Admin:', error);
+      handleError('Transferir Liderança de Supra Admin', error);
       throw error;
     }
     const { data: { session } } = await supabase.auth.getSession();
@@ -643,7 +712,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         student_id: user.id,
         message: messageText
       });
-    if (error) console.error('Erro ao enviar mensagem de suporte:', error);
+    if (error) {
+      handleError('Enviar Mensagem de Suporte', error);
+      throw error;
+    }
     await loadData(user.id, user.role);
   };
 
@@ -652,7 +724,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('support_messages')
       .update({ response })
       .eq('id', id);
-    if (error) console.error('Erro ao responder mensagem de suporte:', error);
+    if (error) {
+      handleError('Responder Mensagem de Suporte', error);
+      throw error;
+    }
     if (user) await loadData(user.id, user.role);
   };
 
@@ -671,7 +746,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_completed: true,
         completed_at: new Date().toISOString()
       });
-    if (error) console.error('Erro ao adicionar ciclo de exame:', error);
+    if (error) {
+      handleError('Gravar Ciclo de Simulado', error);
+      throw error;
+    }
     await handleSessionChange({ user });
   };
 
@@ -681,7 +759,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('students')
       .update({ lgpd_ranking_consent: !studentProfile.lgpdRankingConsent })
       .eq('id', user.id);
-    if (error) console.error('Erro ao alterar consentimento LGPD:', error);
+    if (error) {
+      handleError('Atualizar Consentimento LGPD', error);
+      throw error;
+    }
     await handleSessionChange({ user });
   };
 
@@ -698,6 +779,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supportMessages,
         aiKnowledgeFiles,
         systemUsers,
+        globalError,
+        clearGlobalError,
         loginAs,
         logout,
         updateStudentPlan,
