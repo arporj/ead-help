@@ -946,7 +946,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('quiz_sessions')
       .insert({
         student_id: user.id,
-        subject_id: subjectId,
+        subject_id: subjectId === 'all' ? null : subjectId,
         score: correctAnswers,
         is_completed: true,
         completed_at: new Date().toISOString()
