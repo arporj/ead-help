@@ -5,9 +5,19 @@ import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, C
 import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
-  const { loginAs } = useAuth();
+  const { loginAs, user } = useAuth();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/student');
+      }
+    }
+  }, [user, navigate]);
 
   // Login States
   const [loginEmail, setLoginEmail] = useState('');
@@ -57,21 +67,8 @@ export const Login: React.FC = () => {
         }
         throw signInErr;
       }
-
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .maybeSingle();
-
-        if (profile?.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/student');
-        }
-      }
     } catch (err: any) {
+      setLoading(false);
       const errMsg = err.message || '';
       if (errMsg.includes('Invalid login credentials')) {
         setError('E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.');
@@ -80,8 +77,6 @@ export const Login: React.FC = () => {
       } else {
         setError(errMsg || 'Ocorreu um erro ao realizar o login.');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -159,14 +154,8 @@ export const Login: React.FC = () => {
     setSuccessMessage('');
     try {
       await loginAs(role);
-      if (role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/student');
-      }
     } catch (err: any) {
       setError(err.message || 'Erro ao realizar login rápido.');
-    } finally {
       setLoading(false);
     }
   };

@@ -252,6 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    setLoading(true);
     try {
       const suUser = session.user;
 
