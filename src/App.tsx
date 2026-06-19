@@ -17,6 +17,7 @@ import { StudentSupport } from './pages/StudentSupport';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminStudents } from './pages/AdminStudents';
 import { AdminContent } from './pages/AdminContent';
+import { AdminAcademic } from './pages/AdminAcademic';
 import { AdminQuestions } from './pages/AdminQuestions';
 import { AdminAIKnowledge } from './pages/AdminAIKnowledge';
 import { AdminUsers } from './pages/AdminUsers';
@@ -119,6 +120,16 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRole="admin">
                 <Layout>
                   <AdminContent />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/academic" 
+            element={
+              <ProtectedRoute allowedRole="admin">
+                <Layout>
+                  <AdminAcademic />
                 </Layout>
               </ProtectedRoute>
             } 
