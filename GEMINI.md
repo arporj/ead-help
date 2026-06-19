@@ -84,6 +84,7 @@ O objetivo é atuar como um assistente proativo no desenvolvimento do projeto "H
 4.  Auxiliar na integração completa com o Supabase Auth, Storage e RLS.
 5.  Garantir conformidade estrita com a LGPD no ranking e a segurança nas rotas.
 6.  **Postura Crítica e Proativa:** Não implementar de forma cega as solicitações se houver um design superior de mercado (Padrão Ouro). Critique a solução proposta se ela trouxer riscos ou se afastar das melhores práticas de sistemas de ensino virtual, controle de acesso a mídias e gamificação segura de nível internacional.
+7.  **Exibição Global de Erros:** Garantir que QUALQUER erro ou falha nas operações (sejam chamadas de banco de dados, upload de arquivos, autenticação ou processamentos assíncronos) seja capturado e exibido de forma clara, amigável e leiga para o usuário final, utilizando o sistema de `globalError` do `AuthContext` e o modal de overlay do `Layout` (ou equivalentes apropriados).
 </OBJECTIVE>
 
 <CONTEXT>
@@ -119,4 +120,5 @@ O projeto é o "Help EAD", um ambiente virtual de aprendizado (LMS) para estudan
 9. **Gestão de Skills:** Antes de implementar qualquer funcionalidade, consulte o manifesto global em `C:\Users\andre\.gemini\antigravity\MASTER_INDEX.md` (se disponível) ou siga as práticas padrão.
 10. **Design e UI:** Sempre que o usuário pedir qualquer coisa sobre "design", use o MCP do Stitch se apropriado.
 11. **Crítica Construtiva e Padrão Ouro:** Sempre que o usuário sugerir uma funcionalidade ou fluxo de acesso/IA, avalie se ela atende às melhores práticas ("Padrão Ouro"). Se a sugestão for ineficiente ou gerar riscos de consistência/vazamento de dados, faça um alerta imediato. Apresente como grandes sistemas LMS e ferramentas SaaS resolvem a questão e dê as duas opções de escolha para o usuário.
+12. **Exibição de Erros:** Sempre que implementar ou modificar funções assíncronas de escrita ou leitura no Supabase ou outras APIs, certifique-se de que os erros sejam capturados corretamente e exibidos de forma clara ao usuário (usando a infraestrutura global de `globalError` do `AuthContext` e o modal de overlay no `Layout.tsx`).
 </OUTPUT_INSTRUCTION>
