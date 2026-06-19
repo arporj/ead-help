@@ -8,93 +8,117 @@ export const Login: React.FC = () => {
   const { loginAs } = useAuth();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+
+  // Login States
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginShowPassword, setLoginShowPassword] = useState(false);
+
+  // Sign Up States
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpFullName, setSignUpFullName] = useState('');
+  const [signUpShowPassword, setSignUpShowPassword] = useState(false);
+
+  // Common Feedback States
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  // Password validation checks
-  const meetsMinLength = password.length >= 6;
-  const meetsUppercase = /[A-Z]/.test(password);
-  const meetsLowercase = /[a-z]/.test(password);
-  const meetsNumber = /[0-9]/.test(password);
-  const meetsSpecialChar = /[^A-Za-z0-9]/.test(password);
-  const isPasswordValid = meetsMinLength && meetsUppercase && meetsLowercase && meetsNumber && meetsSpecialChar;
+  // Password validation checks for Sign Up
+  const meetsMinLength = signUpPassword.length >= 6;
+  const meetsUppercase = /[A-Z]/.test(signUpPassword);
+  const meetsLowercase = /[a-z]/.test(signUpPassword);
+  const meetsNumber = /[0-9]/.test(signUpPassword);
+  const meetsSpecialChar = /[^A-Za-z0-9]/.test(signUpPassword);
+  const isSignUpPasswordValid = meetsMinLength && meetsUppercase && meetsLowercase && meetsNumber && meetsSpecialChar;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Sign In Handler
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
 
-    if (!email || !password) {
+    if (!loginEmail || !loginPassword) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    if (isSignUp && !fullName) {
-      setError('Por favor, informe seu nome completo.');
+    setLoading(true);
+    try {
+      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim().toLowerCase(),
+        password: loginPassword
+      });
+
+      if (signInErr) {
+        if (signInErr.message.includes('Email not confirmed') || signInErr.message.includes('email_not_confirmed')) {
+          throw new Error('Confirmação de e-mail pendente. Por favor, verifique a sua caixa de entrada para ativar a sua conta. Se não recebeu o e-mail, entre em contato em suporte@helpead.com.br.');
+        }
+        throw signInErr;
+      }
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        if (profile?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/student');
+        }
+      }
+    } catch (err: any) {
+      const errMsg = err.message || '';
+      if (errMsg.includes('Invalid login credentials')) {
+        setError('E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.');
+      } else if (errMsg.includes('User not found') || errMsg.includes('User does not exist')) {
+        setError('Usuário não encontrado. Cadastre-se ou verifique o e-mail digitado.');
+      } else {
+        setError(errMsg || 'Ocorreu um erro ao realizar o login.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign Up Handler
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+
+    if (!signUpEmail || !signUpPassword || !signUpFullName) {
+      setError('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    if (isSignUp && !isPasswordValid) {
+    if (!isSignUpPasswordValid) {
       setError('Por favor, defina uma senha que atenda a todos os requisitos de segurança obrigatórios.');
       return;
     }
 
     setLoading(true);
     try {
-      if (isSignUp) {
-        // Fluxo de Cadastro Real (Sign Up) com Supabase Auth
-        const { error: signUpErr } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password,
-          options: {
-            data: {
-              full_name: fullName.trim(),
-            }
-          }
-        });
-
-        if (signUpErr) throw signUpErr;
-
-        setSuccessMessage('Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Por favor, verifique a sua caixa de entrada e clique no link para ativar sua conta e entrar no sistema.');
-        // Limpar todos os campos e voltar para a tela de login
-        setEmail('');
-        setFullName('');
-        setPassword('');
-        setIsSignUp(false);
-      } else {
-        // Fluxo de Login Real (Sign In) com e-mail e senha informados
-        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password
-        });
-
-        if (signInErr) {
-          if (signInErr.message.includes('Email not confirmed') || signInErr.message.includes('email_not_confirmed')) {
-            throw new Error('Confirmação de e-mail pendente. Por favor, verifique a sua caixa de entrada para ativar a sua conta. Se não recebeu o e-mail, entre em contato em suporte@helpead.com.br.');
-          }
-          throw signInErr;
-        }
-
-        // Buscar a role do usuário no profiles para redirecionamento dinâmico
-        if (data.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .maybeSingle();
-
-          if (profile?.role === 'admin') {
-            navigate('/admin');
-          } else {
-            navigate('/student');
+      const { error: signUpErr } = await supabase.auth.signUp({
+        email: signUpEmail.trim().toLowerCase(),
+        password: signUpPassword,
+        options: {
+          data: {
+            full_name: signUpFullName.trim(),
           }
         }
-      }
+      });
+
+      if (signUpErr) throw signUpErr;
+
+      setSuccessMessage('Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Por favor, verifique a sua caixa de entrada e clique no link para ativar sua conta e entrar no sistema.');
+      setSignUpEmail('');
+      setSignUpFullName('');
+      setSignUpPassword('');
     } catch (err: any) {
       const errMsg = err.message || '';
       if (
@@ -106,11 +130,7 @@ export const Login: React.FC = () => {
       } else {
         let friendlyMessage = 'Ocorreu um erro no processamento. Por favor, tente novamente.';
         
-        if (errMsg.includes('Invalid login credentials')) {
-          friendlyMessage = 'E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.';
-        } else if (errMsg.includes('User not found') || errMsg.includes('User does not exist')) {
-          friendlyMessage = 'Usuário não encontrado. Cadastre-se ou verifique o e-mail digitado.';
-        } else if (errMsg.includes('Invalid email') || errMsg.includes('invalid_email') || errMsg.includes('Email address is invalid')) {
+        if (errMsg.includes('Invalid email') || errMsg.includes('invalid_email') || errMsg.includes('Email address is invalid')) {
           friendlyMessage = 'E-mail em formato inválido. Por favor, digite um endereço de e-mail válido.';
         } else if (errMsg.includes('Password should be') || errMsg.includes('at least 6 characters')) {
           friendlyMessage = 'A senha deve conter pelo menos 6 caracteres.';
@@ -151,13 +171,21 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleTabChange = (signUpMode: boolean) => {
+    setIsSignUp(signUpMode);
+    setError('');
+    setSuccessMessage('');
+    setLoginShowPassword(false);
+    setSignUpShowPassword(false);
+  };
+
   return (
     <div className="bg-brand-dark min-h-screen flex items-center justify-center p-4">
       {/* Subtle backgrounds */}
       <div className="absolute top-1/3 left-1/3 w-80 h-80 bg-brand-light/5 rounded-full filter blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-brand-medium/5 rounded-full filter blur-3xl pointer-events-none"></div>
 
-      <div className="bg-brand-medium/10 border border-brand-medium/50 p-8 rounded-2xl w-full max-w-md shadow-2xl backdrop-blur-md relative">
+      <div className="bg-brand-medium/10 border border-brand-medium/50 p-8 rounded-2xl w-full max-w-md shadow-2xl backdrop-blur-md relative animate-in fade-in zoom-in-95 duration-355">
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="bg-brand-medium text-brand-light p-3 rounded-2xl border border-brand-light/20 mb-4 shadow-lg">
             <BrainCircuit className="w-10 h-10" />
@@ -171,7 +199,7 @@ export const Login: React.FC = () => {
         {/* Tab Switcher */}
         <div className="flex bg-brand-dark border border-brand-medium/60 p-1 rounded-xl mb-6">
           <button
-            onClick={() => { setIsSignUp(false); setError(''); setSuccessMessage(''); setShowPassword(false); }}
+            onClick={() => handleTabChange(false)}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
               !isSignUp 
                 ? 'bg-brand-light text-brand-dark shadow-md' 
@@ -181,7 +209,7 @@ export const Login: React.FC = () => {
             Entrar
           </button>
           <button
-            onClick={() => { setIsSignUp(true); setError(''); setSuccessMessage(''); setShowPassword(false); }}
+            onClick={() => handleTabChange(true)}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
               isSignUp 
                 ? 'bg-brand-light text-brand-dark shadow-md' 
@@ -206,8 +234,61 @@ export const Login: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp && (
+        {/* Conditional Rendering of Forms */}
+        {!isSignUp ? (
+          /* FORMULÁRIO DE LOGIN (SIGN IN) */
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Mail size={13} /> Endereço de E-mail
+              </label>
+              <input 
+                type="email"
+                disabled={loading}
+                placeholder="seuemail@exemplo.com"
+                value={loginEmail}
+                onChange={(e) => { setLoginEmail(e.target.value); setError(''); }}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Lock size={13} /> Senha
+              </label>
+              <div className="relative">
+                <input 
+                  type={loginShowPassword ? 'text' : 'password'}
+                  disabled={loading}
+                  placeholder="Digite sua senha"
+                  value={loginPassword}
+                  onChange={(e) => { setLoginPassword(e.target.value); setError(''); }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-4 pr-12 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLoginShowPassword(!loginShowPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={loginShowPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {loginShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-brand-light/5 group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Entrando no Portal...' : 'Entrar no Portal'}
+              <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </form>
+        ) : (
+          /* FORMULÁRIO DE CADASTRO (SIGN UP) */
+          <form onSubmit={handleSignUp} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <User size={13} /> Nome Completo
@@ -216,51 +297,51 @@ export const Login: React.FC = () => {
                 type="text"
                 disabled={loading}
                 placeholder="Ex: João da Silva"
-                value={fullName}
-                onChange={(e) => { setFullName(e.target.value); setError(''); }}
+                value={signUpFullName}
+                onChange={(e) => { setSignUpFullName(e.target.value); setError(''); }}
                 className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
               />
             </div>
-          )}
 
-          <div>
-            <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Mail size={13} /> Endereço de E-mail
-            </label>
-            <input 
-              type="email"
-              disabled={loading}
-              placeholder="seuemail@exemplo.com"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Lock size={13} /> Senha
-            </label>
-            <div className="relative">
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Mail size={13} /> Endereço de E-mail
+              </label>
               <input 
-                type={showPassword ? 'text' : 'password'}
+                type="email"
                 disabled={loading}
-                placeholder="Digite sua senha"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-4 pr-12 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+                placeholder="seuemail@exemplo.com"
+                value={signUpEmail}
+                onChange={(e) => { setSignUpEmail(e.target.value); setError(''); }}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors cursor-pointer"
-                tabIndex={-1}
-                title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
             </div>
-            {isSignUp && (
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Lock size={13} /> Senha
+              </label>
+              <div className="relative">
+                <input 
+                  type={signUpShowPassword ? 'text' : 'password'}
+                  disabled={loading}
+                  placeholder="Defina sua senha"
+                  value={signUpPassword}
+                  onChange={(e) => { setSignUpPassword(e.target.value); setError(''); }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-4 pr-12 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSignUpShowPassword(!signUpShowPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={signUpShowPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              {/* Password checklist is always visible for Sign Up */}
               <div className="mt-2.5 p-3 bg-brand-dark/50 border border-brand-medium/40 rounded-xl space-y-1.5 text-[11px] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
                 <span className="block font-bold text-brand-light uppercase tracking-wider mb-1">Requisitos da Senha:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
@@ -300,21 +381,18 @@ export const Login: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-brand-light/5 group disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading 
-              ? (isSignUp ? 'Efetuando cadastro...' : 'Entrando no Portal...') 
-              : (isSignUp ? 'Finalizar Cadastro' : 'Entrar no Portal')
-            }
-            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </form>
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-brand-light/5 group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Efetuando cadastro...' : 'Finalizar Cadastro'}
+              <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </form>
+        )}
 
         <div className="my-6 flex items-center justify-between">
           <span className="w-full border-b border-brand-medium/40"></span>
