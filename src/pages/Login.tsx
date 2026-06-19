@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, Check } from 'lucide-react';
+import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, Check, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
@@ -14,6 +14,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Password validation checks
   const meetsMinLength = password.length >= 6;
@@ -170,7 +171,7 @@ export const Login: React.FC = () => {
         {/* Tab Switcher */}
         <div className="flex bg-brand-dark border border-brand-medium/60 p-1 rounded-xl mb-6">
           <button
-            onClick={() => { setIsSignUp(false); setError(''); setSuccessMessage(''); }}
+            onClick={() => { setIsSignUp(false); setError(''); setSuccessMessage(''); setShowPassword(false); }}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
               !isSignUp 
                 ? 'bg-brand-light text-brand-dark shadow-md' 
@@ -180,7 +181,7 @@ export const Login: React.FC = () => {
             Entrar
           </button>
           <button
-            onClick={() => { setIsSignUp(true); setError(''); setSuccessMessage(''); }}
+            onClick={() => { setIsSignUp(true); setError(''); setSuccessMessage(''); setShowPassword(false); }}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
               isSignUp 
                 ? 'bg-brand-light text-brand-dark shadow-md' 
@@ -240,14 +241,25 @@ export const Login: React.FC = () => {
             <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Lock size={13} /> Senha
             </label>
-            <input 
-              type="password"
-              disabled={loading}
-              placeholder="Digite sua senha"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? 'text' : 'password'}
+                disabled={loading}
+                placeholder="Digite sua senha"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-4 pr-12 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                tabIndex={-1}
+                title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             {isSignUp && (
               <div className="mt-2.5 p-3 bg-brand-dark/50 border border-brand-medium/40 rounded-xl space-y-1.5 text-[11px] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
                 <span className="block font-bold text-brand-light uppercase tracking-wider mb-1">Requisitos da Senha:</span>
