@@ -10,7 +10,10 @@ export const StudentExams: React.FC = () => {
   const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   // States
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const [subjectSearchText, setSubjectSearchText] = useState('');
   const [isExamRunning, setIsExamRunning] = useState(false);
   const [examQuestions, setExamQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -22,15 +25,32 @@ export const StudentExams: React.FC = () => {
 
   const isProOrPremium = studentProfile?.plan === 'pro' || studentProfile?.plan === 'premium';
 
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setSelectedSubjectId('all');
+    setSubjectSearchText('');
+    setIsSubjectDropdownOpen(false);
+  };
+
   // Filter and build the 10 questions session
   const handleStartExam = () => {
-    // 1. Filter questions by subject
+    // 1. Filter questions by course and subject
     let filtered = questions.filter(q => {
       // Check if student plan allows this question
       if (q.isProOrPremium && !isProOrPremium) return false;
       
-      if (selectedSubjectId === 'all') return true;
-      return q.subjectId === selectedSubjectId;
+      // Filter by subject if specified
+      if (selectedSubjectId !== 'all') {
+        return q.subjectId === selectedSubjectId;
+      }
+      
+      // If subject is 'all' but course is specified, filter by course
+      if (selectedCourseId !== 'all') {
+        const subject = subjects.find(s => s.id === q.subjectId);
+        if (!subject || subject.courseId !== selectedCourseId) return false;
+      }
+      
+      return true;
     });
 
     // If we have fewer than 10 questions in this filter, let's complement with others
@@ -292,25 +312,116 @@ export const StudentExams: React.FC = () => {
         </div>
 
         <div className="space-y-4 pt-2">
-          <div>
-            <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
-              Escolher Disciplina de Foco
-            </label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none"
-            >
-              <option value="all">Todas as Disciplinas (Misto)</option>
-              {sortedSubjects.map(sub => {
-                const course = courses.find(c => c.id === sub.courseId);
-                return (
-                  <option key={sub.id} value={sub.id}>
-                    {course?.name.substring(0, 10)}... - {sub.name}
-                  </option>
-                );
-              })}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                Escolher Curso
+              </label>
+              <select
+                value={selectedCourseId}
+                onChange={(e) => handleCourseChange(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer"
+              >
+                <option value="all">Todos os Cursos</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative">
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                Escolher Disciplina de Foco
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={selectedSubjectId === 'all' ? "Todas as Disciplinas (Misto)" : (subjects.find(s => s.id === selectedSubjectId)?.name || 'Todas as Disciplinas (Misto)')}
+                  value={isSubjectDropdownOpen ? subjectSearchText : (subjects.find(s => s.id === selectedSubjectId)?.name || '')}
+                  onFocus={() => {
+                    setIsSubjectDropdownOpen(true);
+                    setSubjectSearchText('');
+                  }}
+                  onChange={(e) => {
+                    setSubjectSearchText(e.target.value);
+                    setIsSubjectDropdownOpen(true);
+                  }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-3.5 pr-8 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-550"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors bg-transparent border-none p-0 outline-none focus:outline-none shadow-none"
+                >
+                  <svg className={`w-3.5 h-3.5 transition-transform ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+
+              {isSubjectDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => {
+                      setIsSubjectDropdownOpen(false);
+                      setSubjectSearchText('');
+                    }}
+                  />
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubjectId('all');
+                        setIsSubjectDropdownOpen(false);
+                        setSubjectSearchText('');
+                      }}
+                      className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                        selectedSubjectId === 'all' ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                      }`}
+                    >
+                      Todas as Disciplinas (Misto)
+                    </button>
+                    {(() => {
+                      // Filtrar disciplinas pelo curso selecionado (se não for 'all')
+                      const courseSubjects = selectedCourseId === 'all' 
+                        ? sortedSubjects 
+                        : sortedSubjects.filter(s => s.courseId === selectedCourseId);
+                      
+                      // Filtrar pelo texto pesquisado
+                      const searchedSubjects = courseSubjects.filter(sub => 
+                        sub.name.toLowerCase().includes(subjectSearchText.toLowerCase())
+                      );
+
+                      if (searchedSubjects.length === 0) {
+                        return (
+                          <div className="px-3 py-2 text-gray-500 italic">
+                            Nenhuma disciplina encontrada
+                          </div>
+                        );
+                      }
+
+                      return searchedSubjects.map(sub => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSubjectId(sub.id);
+                            setIsSubjectDropdownOpen(false);
+                            setSubjectSearchText('');
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                            selectedSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="bg-brand-dark/40 border border-brand-medium/55 p-4 rounded-xl space-y-2.5 text-xs text-gray-300 leading-relaxed">
