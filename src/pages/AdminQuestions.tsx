@@ -8,7 +8,8 @@ export const AdminQuestions: React.FC = () => {
 
   // Form State
   const [prompt, setPrompt] = useState('');
-  const [subjectId, setSubjectId] = useState(subjects[0]?.id || '');
+  const [formCourseId, setFormCourseId] = useState<string>('');
+  const [subjectId, setSubjectId] = useState('');
   const [type, setType] = useState<'simulado' | 'prova'>('simulado');
   const [isProOrPremium, setIsProOrPremium] = useState(false);
   const [options, setOptions] = useState<string[]>(['', '', '', '', '']);
@@ -18,6 +19,17 @@ export const AdminQuestions: React.FC = () => {
 
   // Listagem de disciplinas ordenada alfabeticamente para a interface
   const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+  // Sincronizar formCourseId e subjectId iniciais quando as disciplinas carregam
+  useEffect(() => {
+    if (sortedSubjects.length > 0 && !formCourseId) {
+      const firstSub = sortedSubjects[0];
+      if (firstSub) {
+        setFormCourseId(firstSub.courseId);
+        setSubjectId(firstSub.id);
+      }
+    }
+  }, [sortedSubjects, formCourseId]);
 
   // Filter States
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
@@ -138,6 +150,13 @@ export const AdminQuestions: React.FC = () => {
     setEditingQuestionId(q.id);
     setPrompt(q.prompt);
     setSubjectId(q.subjectId);
+    
+    // Sincronizar o curso correspondente à disciplina selecionada na edição
+    const subject = subjects.find(s => s.id === q.subjectId);
+    if (subject) {
+      setFormCourseId(subject.courseId);
+    }
+
     setType(q.type);
     setIsProOrPremium(q.isProOrPremium);
     setOptions(q.options);
@@ -151,6 +170,15 @@ export const AdminQuestions: React.FC = () => {
     setCorrectAnswerIndex(0);
     setIsProOrPremium(false);
     setType('simulado');
+    
+    // Resetar para o primeiro curso e disciplina disponíveis
+    if (sortedSubjects.length > 0) {
+      setFormCourseId(sortedSubjects[0].courseId);
+      setSubjectId(sortedSubjects[0].id);
+    } else {
+      setFormCourseId('');
+      setSubjectId('');
+    }
   };
 
   const handleDeleteClick = async (id: string) => {
@@ -239,7 +267,38 @@ export const AdminQuestions: React.FC = () => {
               />
             </div>
 
+            {/* Combo de Curso e Disciplina em Cascata */}
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                  Curso
+                </label>
+                <select
+                  value={formCourseId}
+                  onChange={(e) => {
+                    const nextCourseId = e.target.value;
+                    setFormCourseId(nextCourseId);
+                    const courseSubjects = sortedSubjects.filter(s => s.courseId === nextCourseId);
+                    if (courseSubjects.length > 0) {
+                      setSubjectId(courseSubjects[0].id);
+                    } else {
+                      setSubjectId('');
+                    }
+                  }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
+                >
+                  {courses.length === 0 ? (
+                    <option value="">Nenhum curso cadastrado</option>
+                  ) : (
+                    courses.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
                   Disciplina
@@ -249,30 +308,34 @@ export const AdminQuestions: React.FC = () => {
                   onChange={(e) => setSubjectId(e.target.value)}
                   className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
                 >
-                  {sortedSubjects.map(sub => {
-                    const course = courses.find(c => c.id === sub.courseId);
-                    return (
-                      <option key={sub.id} value={sub.id}>
-                        {course?.name.substring(0, 10)}... - {sub.name}
-                      </option>
-                    );
-                  })}
+                  {sortedSubjects.filter(sub => sub.courseId === formCourseId).length === 0 ? (
+                    <option value="">Nenhuma disciplina neste curso</option>
+                  ) : (
+                    sortedSubjects
+                      .filter(sub => sub.courseId === formCourseId)
+                      .map(sub => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))
+                  )}
                 </select>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
-                  Tipo de Teste
-                </label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as any)}
-                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
-                >
-                  <option value="simulado">Simulado Geral</option>
-                  <option value="prova">Prova Oficial (Exames)</option>
-                </select>
-              </div>
+            {/* Tipo de Teste */}
+            <div>
+              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                Tipo de Teste
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
+              >
+                <option value="simulado">Simulado Geral</option>
+                <option value="prova">Prova Oficial (Exames)</option>
+              </select>
             </div>
 
             {/* Alternatives */}
