@@ -56,7 +56,7 @@ export const Login: React.FC = () => {
 
     setLoading(true);
     try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: loginEmail.trim().toLowerCase(),
         password: loginPassword
       });
