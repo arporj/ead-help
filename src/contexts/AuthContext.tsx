@@ -825,6 +825,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addQuestion = async (questionData: Omit<Question, 'id'>) => {
+    const trimmedPrompt = questionData.prompt.trim().toLowerCase();
+    const exists = questions.some(q => q.subjectId === questionData.subjectId && q.prompt.trim().toLowerCase() === trimmedPrompt);
+    if (exists) {
+      const err = new Error('Esta questão já está cadastrada nesta disciplina.');
+      handleError('Adicionar Questão', err);
+      throw err;
+    }
+
     const { error } = await supabase
       .from('questions')
       .insert({
@@ -901,6 +909,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateQuestion = async (id: string, questionData: Omit<Question, 'id'>) => {
+    const trimmedPrompt = questionData.prompt.trim().toLowerCase();
+    const exists = questions.some(q => q.id !== id && q.subjectId === questionData.subjectId && q.prompt.trim().toLowerCase() === trimmedPrompt);
+    if (exists) {
+      const err = new Error('Esta questão já está cadastrada nesta disciplina.');
+      handleError('Atualizar Questão', err);
+      throw err;
+    }
+
     const { error } = await supabase
       .from('questions')
       .update({
@@ -931,6 +947,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addSubject = async (name: string, courseId: string, semester: number) => {
+    const trimmedName = name.trim().toLowerCase();
+    const exists = subjects.some(s => s.courseId === courseId && s.name.trim().toLowerCase() === trimmedName);
+    if (exists) {
+      const err = new Error(`A disciplina "${name}" já está cadastrada neste curso.`);
+      handleError('Adicionar Disciplina', err);
+      throw err;
+    }
+
     const { error } = await supabase
       .from('subjects')
       .insert({
@@ -982,6 +1006,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateSubject = async (id: string, name: string, semester: number) => {
+    const currentSub = subjects.find(s => s.id === id);
+    if (!currentSub) return;
+    const trimmedName = name.trim().toLowerCase();
+    const exists = subjects.some(s => s.id !== id && s.courseId === currentSub.courseId && s.name.trim().toLowerCase() === trimmedName);
+    if (exists) {
+      const err = new Error(`A disciplina "${name}" já está cadastrada neste curso.`);
+      handleError('Atualizar Disciplina', err);
+      throw err;
+    }
+
     const { error } = await supabase
       .from('subjects')
       .update({ name, semester })
