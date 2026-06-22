@@ -12,6 +12,8 @@ export const StudentExams: React.FC = () => {
   // States
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
+  const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+  const [courseSearchText, setCourseSearchText] = useState('');
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const [subjectSearchText, setSubjectSearchText] = useState('');
   const [isExamRunning, setIsExamRunning] = useState(false);
@@ -30,6 +32,7 @@ export const StudentExams: React.FC = () => {
     setSelectedSubjectId('all');
     setSubjectSearchText('');
     setIsSubjectDropdownOpen(false);
+    setCourseSearchText('');
   };
 
   // Filter and build the 10 questions session
@@ -313,20 +316,90 @@ export const StudentExams: React.FC = () => {
 
         <div className="space-y-4 pt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
                 Escolher Curso
               </label>
-              <select
-                value={selectedCourseId}
-                onChange={(e) => handleCourseChange(e.target.value)}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todos os Cursos</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>{course.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={selectedCourseId === 'all' ? "Todos os Cursos" : (courses.find(c => c.id === selectedCourseId)?.name || 'Todos os Cursos')}
+                  value={isCourseDropdownOpen ? courseSearchText : (courses.find(c => c.id === selectedCourseId)?.name || '')}
+                  onFocus={() => {
+                    setIsCourseDropdownOpen(true);
+                    setCourseSearchText('');
+                  }}
+                  onChange={(e) => {
+                    setCourseSearchText(e.target.value);
+                    setIsCourseDropdownOpen(true);
+                  }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-3.5 pr-8 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-550 animate-fade-in"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors bg-transparent border-none p-0 outline-none focus:outline-none shadow-none"
+                >
+                  <svg className={`w-3.5 h-3.5 transition-transform ${isCourseDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+
+              {isCourseDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => {
+                      setIsCourseDropdownOpen(false);
+                      setCourseSearchText('');
+                    }}
+                  />
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCourseChange('all');
+                        setIsCourseDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                        selectedCourseId === 'all' ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                      }`}
+                    >
+                      Todos os Cursos
+                    </button>
+                    {(() => {
+                      const searchedCourses = courses.filter(c => 
+                        c.name.toLowerCase().includes(courseSearchText.toLowerCase())
+                      );
+
+                      if (searchedCourses.length === 0) {
+                        return (
+                          <div className="px-3 py-2 text-gray-500 italic">
+                            Nenhum curso encontrado
+                          </div>
+                        );
+                      }
+
+                      return searchedCourses.map(course => (
+                        <button
+                          key={course.id}
+                          type="button"
+                          onClick={() => {
+                            handleCourseChange(course.id);
+                            setIsCourseDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                            selectedCourseId === course.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                          }`}
+                        >
+                          {course.name}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="relative">
@@ -401,22 +474,25 @@ export const StudentExams: React.FC = () => {
                         );
                       }
 
-                      return searchedSubjects.map(sub => (
-                        <button
-                          key={sub.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedSubjectId(sub.id);
-                            setIsSubjectDropdownOpen(false);
-                            setSubjectSearchText('');
-                          }}
-                          className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
-                            selectedSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
-                          }`}
-                        >
-                          {sub.name}
-                        </button>
-                      ));
+                      return searchedSubjects.map(sub => {
+                        const course = courses.find(c => c.id === sub.courseId);
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSubjectId(sub.id);
+                              setIsSubjectDropdownOpen(false);
+                              setSubjectSearchText('');
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                              selectedSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                            }`}
+                          >
+                            {selectedCourseId === 'all' && course ? `${course.name.substring(0, 15)}... - ` : ''}{sub.name}
+                          </button>
+                        );
+                      });
                     })()}
                   </div>
                 </>
