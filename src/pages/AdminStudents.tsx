@@ -18,12 +18,25 @@ export const AdminStudents: React.FC = () => {
   const [localAccesses, setLocalAccesses] = useState<string[]>([]);
   const [modalSearch, setModalSearch] = useState('');
   const [modalCourseId, setModalCourseId] = useState('all');
+  const [modalSubjectId, setModalSubjectId] = useState('all');
+  const [isModalSubjectDropdownOpen, setIsModalSubjectDropdownOpen] = useState(false);
+  const [modalSubjectSearchText, setModalSubjectSearchText] = useState('');
 
   const openModal = (student: typeof students[0]) => {
     setSelectedStudent(student);
     setLocalAccesses(student.profile.summaryAccess);
     setModalSearch('');
     setModalCourseId('all');
+    setModalSubjectId('all');
+    setModalSubjectSearchText('');
+    setIsModalSubjectDropdownOpen(false);
+  };
+
+  const handleModalCourseChange = (courseId: string) => {
+    setModalCourseId(courseId);
+    setModalSubjectId('all');
+    setModalSubjectSearchText('');
+    setIsModalSubjectDropdownOpen(false);
   };
 
   // Filter Premium summaries only for student individual access control
@@ -48,6 +61,13 @@ export const AdminStudents: React.FC = () => {
     if (modalCourseId !== 'all') {
       const subject = subjects.find(s => s.id === sum.subjectId);
       if (!subject || subject.courseId !== modalCourseId) {
+        return false;
+      }
+    }
+
+    // 3. Subject Category filter
+    if (modalSubjectId !== 'all') {
+      if (sum.subjectId !== modalSubjectId) {
         return false;
       }
     }
@@ -215,32 +235,127 @@ export const AdminStudents: React.FC = () => {
             </div>
 
             {/* Modal Filters */}
-            <div className="p-4 border-b border-brand-medium/30 bg-brand-medium/5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 border-b border-brand-medium/30 bg-brand-medium/5 space-y-3">
               {/* Text Search */}
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Buscar por título ou disciplina..."
+                  placeholder="Buscar por título ou descrição..."
                   value={modalSearch}
                   onChange={(e) => setModalSearch(e.target.value)}
                   className="w-full bg-brand-dark/60 border border-brand-medium/55 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:border-brand-light focus:outline-none"
                 />
               </div>
 
-              {/* Course filter */}
-              <div className="relative">
-                <Filter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <select
-                  value={modalCourseId}
-                  onChange={(e) => setModalCourseId(e.target.value)}
-                  className="w-full bg-brand-dark/60 border border-brand-medium/55 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:border-brand-light focus:outline-none appearance-none cursor-pointer"
-                >
-                  <option value="all">Todos os Cursos</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
-                  ))}
-                </select>
+              {/* Cascading Course and Subject Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Course filter */}
+                <div className="relative">
+                  <Filter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <select
+                    value={modalCourseId}
+                    onChange={(e) => handleModalCourseChange(e.target.value)}
+                    className="w-full bg-brand-dark/60 border border-brand-medium/55 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:border-brand-light focus:outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="all">Todos os Cursos</option>
+                    {courses.map(course => (
+                      <option key={course.id} value={course.id}>{course.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subject filter (Custom Searchable Dropdown) */}
+                <div className="relative">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder={modalSubjectId === 'all' ? "Todas as Disciplinas" : (subjects.find(s => s.id === modalSubjectId)?.name || 'Todas as Disciplinas')}
+                      value={isModalSubjectDropdownOpen ? modalSubjectSearchText : (subjects.find(s => s.id === modalSubjectId)?.name || '')}
+                      onFocus={() => {
+                        setIsModalSubjectDropdownOpen(true);
+                        setModalSubjectSearchText('');
+                      }}
+                      onChange={(e) => {
+                        setModalSubjectSearchText(e.target.value);
+                        setIsModalSubjectDropdownOpen(true);
+                      }}
+                      className="w-full bg-brand-dark/60 border border-brand-medium/55 rounded-xl pl-3.5 pr-8 py-2 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-550"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsModalSubjectDropdownOpen(!isModalSubjectDropdownOpen)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors bg-transparent border-none p-0 outline-none focus:outline-none shadow-none"
+                    >
+                      <svg className={`w-3.5 h-3.5 transition-transform ${isModalSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {isModalSubjectDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => {
+                          setIsModalSubjectDropdownOpen(false);
+                          setModalSubjectSearchText('');
+                        }}
+                      />
+                      <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalSubjectId('all');
+                            setIsModalSubjectDropdownOpen(false);
+                            setModalSubjectSearchText('');
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                            modalSubjectId === 'all' ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                          }`}
+                        >
+                          Todas as Disciplinas
+                        </button>
+                        {(() => {
+                          // Filtrar disciplinas pelo curso selecionado (se não for 'all')
+                          const courseSubjects = modalCourseId === 'all' 
+                            ? subjects 
+                            : subjects.filter(s => s.courseId === modalCourseId);
+                          
+                          // Filtrar pelo texto pesquisado
+                          const searchedSubjects = courseSubjects.filter(sub => 
+                            sub.name.toLowerCase().includes(modalSubjectSearchText.toLowerCase())
+                          );
+
+                          if (searchedSubjects.length === 0) {
+                            return (
+                              <div className="px-3 py-2 text-gray-500 italic">
+                                Nenhuma disciplina encontrada
+                              </div>
+                            );
+                          }
+
+                          return searchedSubjects.map(sub => (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                setModalSubjectId(sub.id);
+                                setIsModalSubjectDropdownOpen(false);
+                                setModalSubjectSearchText('');
+                              }}
+                              className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                                modalSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                              }`}
+                            >
+                              {sub.name}
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
