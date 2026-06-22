@@ -18,6 +18,8 @@ export const AdminContent: React.FC = () => {
   const [subjectId, setSubjectId] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
+  const [isFormSubjectDropdownOpen, setIsFormSubjectDropdownOpen] = useState(false);
+  const [formSubjectSearchText, setFormSubjectSearchText] = useState('');
 
   // Sincronizar formCourseId e subjectId iniciais quando as disciplinas carregam
   useEffect(() => {
@@ -135,6 +137,8 @@ export const AdminContent: React.FC = () => {
       setFormCourseId('');
       setSubjectId('');
     }
+    setFormSubjectSearchText('');
+    setIsFormSubjectDropdownOpen(false);
   };
 
   const handleDeleteClick = async (id: string) => {
@@ -255,27 +259,73 @@ export const AdminContent: React.FC = () => {
                 </select>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
                   Disciplina Associada
                 </label>
-                <select
-                  value={subjectId}
-                  onChange={(e) => setSubjectId(e.target.value)}
-                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
-                >
-                  {sortedSubjects.filter(sub => sub.courseId === formCourseId).length === 0 ? (
-                    <option value="">Nenhuma disciplina neste curso</option>
-                  ) : (
-                    sortedSubjects
-                      .filter(sub => sub.courseId === formCourseId)
-                      .map(sub => (
-                        <option key={sub.id} value={sub.id}>
-                          {sub.name} (Sem. {sub.semester})
-                        </option>
-                      ))
-                  )}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={
+                      subjects.find(s => s.id === subjectId)?.name || "Selecione a Disciplina..."
+                    }
+                    value={formSubjectSearchText}
+                    onFocus={() => setIsFormSubjectDropdownOpen(true)}
+                    onChange={(e) => {
+                      setFormSubjectSearchText(e.target.value);
+                      setIsFormSubjectDropdownOpen(true);
+                    }}
+                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-white placeholder:font-medium"
+                  />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
+                    ▼
+                  </div>
+                </div>
+
+                {isFormSubjectDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => {
+                        setIsFormSubjectDropdownOpen(false);
+                        setFormSubjectSearchText('');
+                      }}
+                    />
+                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                      {(() => {
+                        const courseSubjects = sortedSubjects.filter(s => s.courseId === formCourseId);
+                        const searchedSubjects = courseSubjects.filter(sub => 
+                          sub.name.toLowerCase().includes(formSubjectSearchText.toLowerCase())
+                        );
+
+                        if (searchedSubjects.length === 0) {
+                          return (
+                            <div className="px-3 py-2 text-gray-500 italic">
+                              Nenhuma disciplina encontrada
+                            </div>
+                          );
+                        }
+
+                        return searchedSubjects.map(sub => (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setSubjectId(sub.id);
+                              setIsFormSubjectDropdownOpen(false);
+                              setFormSubjectSearchText('');
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                              subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
+                            }`}
+                          >
+                            {sub.name} (Sem. {sub.semester})
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
