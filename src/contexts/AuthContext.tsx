@@ -89,12 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: subjectsData } = await supabase.from('subjects').select('*');
       if (coursesData) setCourses(coursesData);
       if (subjectsData) {
-        setSubjects(subjectsData.map(s => ({
+        const sortedSubjects = subjectsData.map(s => ({
           id: s.id,
           courseId: s.course_id,
           name: s.name,
           semester: s.semester
-        })));
+        })).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+        setSubjects(sortedSubjects);
       }
 
       // Resumos
