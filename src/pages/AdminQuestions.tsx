@@ -16,6 +16,9 @@ export const AdminQuestions: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
 
+  // Listagem de disciplinas ordenada alfabeticamente para a interface
+  const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
   // Filter States
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
   const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
@@ -246,7 +249,7 @@ export const AdminQuestions: React.FC = () => {
                   onChange={(e) => setSubjectId(e.target.value)}
                   className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
                 >
-                  {subjects.map(sub => {
+                  {sortedSubjects.map(sub => {
                     const course = courses.find(c => c.id === sub.courseId);
                     return (
                       <option key={sub.id} value={sub.id}>
@@ -421,8 +424,8 @@ export const AdminQuestions: React.FC = () => {
                     </button>
                     {(() => {
                       const relevantSubjects = filterCourseId === 'all' 
-                        ? subjects 
-                        : subjects.filter(s => s.courseId === filterCourseId);
+                        ? sortedSubjects 
+                        : sortedSubjects.filter(s => s.courseId === filterCourseId);
 
                       const searchedSubjects = relevantSubjects.filter(sub => 
                         sub.name.toLowerCase().includes(filterSubjectSearchText.toLowerCase())
