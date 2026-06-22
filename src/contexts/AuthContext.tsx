@@ -261,11 +261,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const suUser = session.user;
 
       // Buscar perfil
-      const { data: profile, error: profileErr } = await supabase
+      let profile = null;
+      let profileErr = null;
+
+      // Primeira tentativa de busca
+      const res1 = await supabase
         .from('profiles')
         .select('*')
         .eq('id', suUser.id)
-        .single();
+        .maybeSingle();
+
+      profile = res1.data;
+      profileErr = res1.error;
+
+      // Se falhar ou não encontrar e a sessão for válida, tentar novamente após 150ms (latência Supabase Client/RLS)
+      if ((profileErr || !profile) && session) {
+        console.warn('Perfil não encontrado na primeira tentativa, tentando novamente em 150ms...');
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const res2 = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', suUser.id)
+          .maybeSingle();
+        profile = res2.data;
+        profileErr = res2.error;
+      }
 
       if (profileErr || !profile) {
         console.error('Perfil não encontrado para o usuário:', suUser.id);
