@@ -33,15 +33,6 @@ export const AdminQuestions: React.FC = () => {
     }
   }, [sortedSubjects, formCourseId]);
 
-  // Sincronizar o texto de busca do formulário com a disciplina selecionada
-  useEffect(() => {
-    const activeSub = subjects.find(s => s.id === subjectId);
-    if (activeSub) {
-      setFormSubjectSearchText(activeSub.name);
-    } else {
-      setFormSubjectSearchText('');
-    }
-  }, [subjectId, subjects]);
 
   // Filter States
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
@@ -321,8 +312,11 @@ export const AdminQuestions: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Selecione ou digite para filtrar..."
-                    value={formSubjectSearchText}
-                    onFocus={() => setIsFormSubjectDropdownOpen(true)}
+                    value={isFormSubjectDropdownOpen ? formSubjectSearchText : (subjects.find(s => s.id === subjectId)?.name || '')}
+                    onFocus={() => {
+                      setIsFormSubjectDropdownOpen(true);
+                      setFormSubjectSearchText('');
+                    }}
                     onChange={(e) => {
                       setFormSubjectSearchText(e.target.value);
                       setIsFormSubjectDropdownOpen(true);
@@ -332,7 +326,7 @@ export const AdminQuestions: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsFormSubjectDropdownOpen(!isFormSubjectDropdownOpen)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors bg-transparent border-none p-0 outline-none focus:outline-none shadow-none"
                   >
                     <svg className={`w-3.5 h-3.5 transition-transform ${isFormSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -346,8 +340,7 @@ export const AdminQuestions: React.FC = () => {
                       className="fixed inset-0 z-10" 
                       onClick={() => {
                         setIsFormSubjectDropdownOpen(false);
-                        const activeSub = subjects.find(s => s.id === subjectId);
-                        setFormSubjectSearchText(activeSub ? activeSub.name : '');
+                        setFormSubjectSearchText('');
                       }}
                     />
                     <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
