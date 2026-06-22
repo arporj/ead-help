@@ -386,9 +386,9 @@ export const AdminAcademic: React.FC = () => {
 
               return filteredCourses.map(course => {
                 const courseSubjects = subjects.filter(s => s.courseId === course.id);
-                const displayedSubjects = courseSubjects.filter(sub =>
-                  sub.name.toLowerCase().includes(searchSubjectQuery.toLowerCase())
-                );
+                const displayedSubjects = courseSubjects
+                  .filter(sub => sub.name.toLowerCase().includes(searchSubjectQuery.toLowerCase()))
+                  .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
                 return (
                   <div key={course.id} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl space-y-3">
                     <div className="flex items-center justify-between border-b border-brand-medium/40 pb-2">

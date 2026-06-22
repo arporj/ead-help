@@ -5,6 +5,9 @@ import { BookOpen, FileText, CheckCircle2, Edit, Trash2, X } from 'lucide-react'
 export const AdminContent: React.FC = () => {
   const { courses, subjects, summaries, addSummary, deleteSummary, updateSummary } = useAuth();
 
+  // Listagem de disciplinas ordenada alfabeticamente para a interface
+  const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
   // Success messaging
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -17,10 +20,10 @@ export const AdminContent: React.FC = () => {
 
   // Sync subjectId when subjects list loads or changes
   useEffect(() => {
-    if (subjects.length > 0 && (!subjectId || !subjects.some(s => s.id === subjectId))) {
-      setSubjectId(subjects[0].id);
+    if (sortedSubjects.length > 0 && (!subjectId || !sortedSubjects.some(s => s.id === subjectId))) {
+      setSubjectId(sortedSubjects[0].id);
     }
-  }, [subjects, subjectId]);
+  }, [sortedSubjects, subjectId]);
 
   // Filter States for Published Summaries
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
@@ -28,7 +31,7 @@ export const AdminContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
-  const availableSubjectsForFilter = subjects.filter(sub => {
+  const availableSubjectsForFilter = sortedSubjects.filter(sub => {
     if (filterCourseId !== 'all' && sub.courseId !== filterCourseId) return false;
     return true;
   });
@@ -204,14 +207,14 @@ export const AdminContent: React.FC = () => {
                 Disciplina Associada
               </label>
               <select
-                value={subjectId || (subjects[0]?.id || '')}
+                value={subjectId || (sortedSubjects[0]?.id || '')}
                 onChange={(e) => setSubjectId(e.target.value)}
                 className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
               >
-                {subjects.length === 0 ? (
+                {sortedSubjects.length === 0 ? (
                   <option value="">Nenhuma disciplina cadastrada</option>
                 ) : (
-                  subjects.map(sub => {
+                  sortedSubjects.map(sub => {
                     const courseName = courses.find(c => c.id === sub.courseId)?.name || 'Curso';
                     return (
                       <option key={sub.id} value={sub.id}>

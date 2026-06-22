@@ -4,6 +4,9 @@ import { FileText, Printer, Lock } from 'lucide-react';
 
 export const StudentBDQ: React.FC = () => {
   const { studentProfile, questions, subjects, courses } = useAuth();
+
+  // Listagem de disciplinas ordenada alfabeticamente para a interface
+  const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
 
   const plan = studentProfile?.plan || 'basic';
@@ -92,7 +95,7 @@ export const StudentBDQ: React.FC = () => {
           className="bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none max-w-xs"
         >
           <option value="all">Todas as Disciplinas</option>
-          {subjects.map(sub => {
+          {sortedSubjects.map(sub => {
             const course = courses.find(c => c.id === sub.courseId);
             return (
               <option key={sub.id} value={sub.id}>

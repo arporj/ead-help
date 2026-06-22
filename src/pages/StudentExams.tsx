@@ -6,6 +6,9 @@ import { HelpCircle, Play, AlertTriangle, CheckCircle, XCircle, ArrowRight, Awar
 export const StudentExams: React.FC = () => {
   const { studentProfile, questions, subjects, courses, addExamCycle } = useAuth();
 
+  // Listagem de disciplinas ordenada alfabeticamente para a interface
+  const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
   // States
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   const [isExamRunning, setIsExamRunning] = useState(false);
@@ -299,7 +302,7 @@ export const StudentExams: React.FC = () => {
               className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none"
             >
               <option value="all">Todas as Disciplinas (Misto)</option>
-              {subjects.map(sub => {
+              {sortedSubjects.map(sub => {
                 const course = courses.find(c => c.id === sub.courseId);
                 return (
                   <option key={sub.id} value={sub.id}>
