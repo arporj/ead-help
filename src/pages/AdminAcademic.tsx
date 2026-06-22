@@ -51,6 +51,10 @@ export const AdminAcademic: React.FC = () => {
   const [editingSubjectName, setEditingSubjectName] = useState('');
   const [editingSubjectSemester, setEditingSubjectSemester] = useState(1);
 
+  // Filter States
+  const [filterCourseId, setFilterCourseId] = useState<string>('all');
+  const [searchSubjectQuery, setSearchSubjectQuery] = useState<string>('');
+
   // Modals for deletion
   const [deletingCourse, setDeletingCourse] = useState<any | null>(null);
   const [deletingSubject, setDeletingSubject] = useState<any | null>(null);
@@ -315,14 +319,76 @@ export const AdminAcademic: React.FC = () => {
             <span>Estrutura de Cursos e Disciplinas ({courses.length})</span>
           </div>
 
+          {/* Filtros */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 pb-4 border-b border-brand-medium/30 shrink-0">
+            <div>
+              <label className="block text-[10px] font-semibold text-brand-light uppercase tracking-wider mb-1">
+                Filtrar por Curso
+              </label>
+              <select
+                value={filterCourseId}
+                onChange={(e) => setFilterCourseId(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+              >
+                <option value="all">Todos os Cursos</option>
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-brand-light uppercase tracking-wider mb-1">
+                Buscar Disciplina
+              </label>
+              <input
+                type="text"
+                placeholder="Buscar por nome..."
+                value={searchSubjectQuery}
+                onChange={(e) => setSearchSubjectQuery(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+              />
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {courses.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 text-xs">
-                Nenhum curso cadastrado ainda.
-              </div>
-            ) : (
-              courses.map(course => {
+            {(() => {
+              const filteredCourses = courses.filter(course => {
+                if (filterCourseId !== 'all' && course.id !== filterCourseId) {
+                  return false;
+                }
+                
+                if (searchSubjectQuery.trim() !== '') {
+                  const courseSubjects = subjects.filter(s => s.courseId === course.id);
+                  const matchingSubjects = courseSubjects.filter(sub => 
+                    sub.name.toLowerCase().includes(searchSubjectQuery.toLowerCase())
+                  );
+                  return matchingSubjects.length > 0;
+                }
+                
+                return true;
+              });
+
+              if (courses.length === 0) {
+                return (
+                  <div className="text-center py-12 text-gray-500 text-xs">
+                    Nenhum curso cadastrado ainda.
+                  </div>
+                );
+              }
+
+              if (filteredCourses.length === 0) {
+                return (
+                  <div className="text-center py-12 text-gray-500 text-xs">
+                    Nenhuma disciplina ou curso encontrado para os filtros aplicados.
+                  </div>
+                );
+              }
+
+              return filteredCourses.map(course => {
                 const courseSubjects = subjects.filter(s => s.courseId === course.id);
+                const displayedSubjects = courseSubjects.filter(sub =>
+                  sub.name.toLowerCase().includes(searchSubjectQuery.toLowerCase())
+                );
                 return (
                   <div key={course.id} className="border border-brand-medium/35 bg-brand-dark/30 p-4 rounded-xl space-y-3">
                     <div className="flex items-center justify-between border-b border-brand-medium/40 pb-2">
@@ -375,11 +441,11 @@ export const AdminAcademic: React.FC = () => {
                       </span>
                     </div>
                     
-                    {courseSubjects.length === 0 ? (
-                      <p className="text-[10px] text-gray-500 italic">Nenhuma disciplina cadastrada neste curso.</p>
+                    {displayedSubjects.length === 0 ? (
+                      <p className="text-[10px] text-gray-500 italic">Nenhuma disciplina cadastrada neste curso ou correspondente ao filtro.</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {courseSubjects.map(sub => (
+                        {displayedSubjects.map(sub => (
                           <div key={sub.id} className="flex items-center justify-between text-[11px] text-gray-300 bg-brand-medium/10 px-2.5 py-1.5 rounded-lg">
                             {editingSubjectId === sub.id ? (
                               <div className="flex items-center gap-2 flex-1">
@@ -445,8 +511,8 @@ export const AdminAcademic: React.FC = () => {
                     )}
                   </div>
                 );
-              })
-            )}
+              });
+            })()}
           </div>
         </div>
       </div>
