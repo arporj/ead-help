@@ -7,10 +7,21 @@ export const StudentBDQ: React.FC = () => {
 
   // Listagem de disciplinas ordenada alfabeticamente para a interface
   const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  // States
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const [subjectSearchText, setSubjectSearchText] = useState('');
 
   const plan = studentProfile?.plan || 'basic';
   const hasAccess = plan === 'pro' || plan === 'premium';
+
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setSelectedSubjectId('all');
+    setSubjectSearchText('');
+    setIsSubjectDropdownOpen(false);
+  };
 
   // Filter questions based on plan access:
   // - basic: no access (block screen)
@@ -22,8 +33,18 @@ export const StudentBDQ: React.FC = () => {
     // Pro sees only simulado. Premium sees everything
     if (plan === 'pro' && q.type !== 'simulado') return false;
 
-    if (selectedSubjectId === 'all') return true;
-    return q.subjectId === selectedSubjectId;
+    // Filter by subject if specified
+    if (selectedSubjectId !== 'all') {
+      return q.subjectId === selectedSubjectId;
+    }
+    
+    // If subject is 'all' but course is specified, filter by course
+    if (selectedCourseId !== 'all') {
+      const subject = subjects.find(s => s.id === q.subjectId);
+      if (!subject || subject.courseId !== selectedCourseId) return false;
+    }
+
+    return true;
   });
 
   const handlePrint = () => {
@@ -87,30 +108,119 @@ export const StudentBDQ: React.FC = () => {
       </div>
 
       {/* Filter Panel (Hidden in Print) */}
-      <div className="print:hidden bg-brand-medium/10 border border-brand-medium/40 p-4 rounded-xl flex items-center gap-4">
-        <label className="text-xs font-bold text-brand-light uppercase shrink-0">Filtrar por Disciplina:</label>
-        <select
-          value={selectedSubjectId}
-          onChange={(e) => setSelectedSubjectId(e.target.value)}
-          className="bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none max-w-xs"
-        >
-          <option value="all">Todas as Disciplinas</option>
-          {sortedSubjects.map(sub => {
-            const course = courses.find(c => c.id === sub.courseId);
-            return (
-              <option key={sub.id} value={sub.id}>
-                {course?.name.substring(0, 10)}... - {sub.name}
-              </option>
-            );
-          })}
-        </select>
+      <div className="print:hidden bg-brand-medium/10 border border-brand-medium/40 p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-brand-light uppercase tracking-wider mb-1.5">Filtrar por Curso</label>
+          <select
+            value={selectedCourseId}
+            onChange={(e) => handleCourseChange(e.target.value)}
+            className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer"
+          >
+            <option value="all">Todos os Cursos</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>{course.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative">
+          <label className="block text-xs font-bold text-brand-light uppercase tracking-wider mb-1.5">Filtrar por Disciplina</label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={selectedSubjectId === 'all' ? "Todas as Disciplinas" : (subjects.find(s => s.id === selectedSubjectId)?.name || 'Todas as Disciplinas')}
+              value={isSubjectDropdownOpen ? subjectSearchText : (subjects.find(s => s.id === selectedSubjectId)?.name || '')}
+              onFocus={() => {
+                setIsSubjectDropdownOpen(true);
+                setSubjectSearchText('');
+              }}
+              onChange={(e) => {
+                setSubjectSearchText(e.target.value);
+                setIsSubjectDropdownOpen(true);
+              }}
+              className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-3.5 pr-8 py-2 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-550"
+            />
+            <button
+              type="button"
+              onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors bg-transparent border-none p-0 outline-none focus:outline-none shadow-none"
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {isSubjectDropdownOpen && (
+            <>
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => {
+                  setIsSubjectDropdownOpen(false);
+                  setSubjectSearchText('');
+                }}
+              />
+              <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubjectId('all');
+                    setIsSubjectDropdownOpen(false);
+                    setSubjectSearchText('');
+                  }}
+                  className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                    selectedSubjectId === 'all' ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                  }`}
+                >
+                  Todas as Disciplinas
+                </button>
+                {(() => {
+                  // Filtrar disciplinas pelo curso selecionado (se não for 'all')
+                  const courseSubjects = selectedCourseId === 'all' 
+                    ? sortedSubjects 
+                    : sortedSubjects.filter(s => s.courseId === selectedCourseId);
+                  
+                  // Filtrar pelo texto pesquisado
+                  const searchedSubjects = courseSubjects.filter(sub => 
+                    sub.name.toLowerCase().includes(subjectSearchText.toLowerCase())
+                  );
+
+                  if (searchedSubjects.length === 0) {
+                    return (
+                      <div className="px-3 py-2 text-gray-500 italic">
+                        Nenhuma disciplina encontrada
+                      </div>
+                    );
+                  }
+
+                  return searchedSubjects.map(sub => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubjectId(sub.id);
+                        setIsSubjectDropdownOpen(false);
+                        setSubjectSearchText('');
+                      }}
+                      className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                        selectedSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
+                      }`}
+                    >
+                      {sub.name}
+                    </button>
+                  ));
+                })()}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Print-only Header (Visible only when Printing) */}
       <div className="hidden print:block text-black mb-8 border-b-2 border-black pb-4 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight">HELP EAD - BANCO DE QUESTÕES (BDQ)</h1>
         <p className="text-xs font-medium mt-1">
-          Plano de Acesso: {plan.toUpperCase()} &bull; Filtro: {selectedSubjectId === 'all' ? 'Todas as Disciplinas' : subjects.find(s => s.id === selectedSubjectId)?.name}
+          Plano de Acesso: {plan.toUpperCase()} &bull; Curso: {selectedCourseId === 'all' ? 'Todos' : courses.find(c => c.id === selectedCourseId)?.name} &bull; Disciplina: {selectedSubjectId === 'all' ? 'Todas' : subjects.find(s => s.id === selectedSubjectId)?.name}
         </p>
         <p className="text-[10px] text-gray-500 mt-0.5">Gerado em: {new Date().toLocaleDateString()}</p>
       </div>
