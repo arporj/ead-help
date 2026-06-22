@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, ListCollapse, CheckCircle2, Edit, Trash2, X } from 'lucide-react';
 import type { Question } from '../types';
@@ -15,6 +15,32 @@ export const AdminQuestions: React.FC = () => {
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
   const [successMsg, setSuccessMsg] = useState('');
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+
+  // Filter States
+  const [filterCourseId, setFilterCourseId] = useState<string>('all');
+  const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
+  const [searchQuestionQuery, setSearchQuestionQuery] = useState<string>('');
+
+  // Custom Searchable Dropdown States for Filters
+  const [isFilterSubjectDropdownOpen, setIsFilterSubjectDropdownOpen] = useState(false);
+  const [filterSubjectSearchText, setFilterSubjectSearchText] = useState('');
+
+  // Cascade effect to update filterSubjectId when filterCourseId changes
+  useEffect(() => {
+    if (filterCourseId === 'all') {
+      setFilterSubjectId('all');
+      setFilterSubjectSearchText('');
+      return;
+    }
+
+    const courseSubjects = subjects.filter(s => s.courseId === filterCourseId);
+    if (courseSubjects.length === 1) {
+      setFilterSubjectId(courseSubjects[0].id);
+    } else {
+      setFilterSubjectId('all');
+    }
+    setFilterSubjectSearchText('');
+  }, [filterCourseId, subjects]);
 
   const handleOptionChange = (index: number, value: string) => {
     const updated = [...options];
@@ -138,6 +164,26 @@ export const AdminQuestions: React.FC = () => {
       }
     }
   };
+
+  const filteredQuestions = questions.filter(q => {
+    // Filtro por Curso
+    if (filterCourseId !== 'all') {
+      const subject = subjects.find(s => s.id === q.subjectId);
+      if (!subject || subject.courseId !== filterCourseId) return false;
+    }
+
+    // Filtro por Disciplina
+    if (filterSubjectId !== 'all' && q.subjectId !== filterSubjectId) {
+      return false;
+    }
+
+    // Filtro por busca textual no enunciado
+    if (searchQuestionQuery.trim() !== '') {
+      return q.prompt.toLowerCase().includes(searchQuestionQuery.toLowerCase());
+    }
+
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -300,13 +346,143 @@ export const AdminQuestions: React.FC = () => {
 
         {/* Right List: Questions Database */}
         <div className="lg:col-span-7 bg-brand-medium/10 border border-brand-medium/40 p-6 rounded-2xl shadow-xl flex flex-col h-[650px]">
-          <h3 className="font-bold text-white text-sm flex items-center gap-2 mb-4">
-            <ListCollapse size={16} className="text-brand-light" />
-            Questões na Base de Dados ({questions.length})
-          </h3>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4 border-b border-brand-medium/40 pb-3 shrink-0">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <ListCollapse size={16} className="text-brand-light" />
+              Questões na Base de Dados ({filteredQuestions.length})
+            </h3>
+          </div>
+
+          {/* Painel de Filtros Acadêmicos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 pb-4 border-b border-brand-medium/30 shrink-0">
+            {/* Combo de Cursos */}
+            <div>
+              <label className="block text-[10px] font-semibold text-brand-light uppercase tracking-wider mb-1">
+                Filtrar por Curso
+              </label>
+              <select
+                value={filterCourseId}
+                onChange={(e) => setFilterCourseId(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+              >
+                <option value="all">Todos os Cursos</option>
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dropdown Pesquisável de Disciplinas */}
+            <div className="relative">
+              <label className="block text-[10px] font-semibold text-brand-light uppercase tracking-wider mb-1">
+                Filtrar por Disciplina
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={
+                    filterSubjectId === 'all' 
+                      ? "Todas as Disciplinas" 
+                      : subjects.find(s => s.id === filterSubjectId)?.name || "Todas as Disciplinas"
+                  }
+                  value={filterSubjectSearchText}
+                  onFocus={() => setIsFilterSubjectDropdownOpen(true)}
+                  onChange={(e) => {
+                    setFilterSubjectSearchText(e.target.value);
+                    setIsFilterSubjectDropdownOpen(true);
+                  }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-white placeholder:font-medium"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
+                  ▼
+                </div>
+              </div>
+
+              {isFilterSubjectDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => {
+                      setIsFilterSubjectDropdownOpen(false);
+                      setFilterSubjectSearchText('');
+                    }}
+                  />
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterSubjectId('all');
+                        setIsFilterSubjectDropdownOpen(false);
+                        setFilterSubjectSearchText('');
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-brand-medium/40 text-brand-light font-bold"
+                    >
+                      Todas as Disciplinas
+                    </button>
+                    {(() => {
+                      const relevantSubjects = filterCourseId === 'all' 
+                        ? subjects 
+                        : subjects.filter(s => s.courseId === filterCourseId);
+
+                      const searchedSubjects = relevantSubjects.filter(sub => 
+                        sub.name.toLowerCase().includes(filterSubjectSearchText.toLowerCase())
+                      );
+
+                      if (searchedSubjects.length === 0) {
+                        return (
+                          <div className="px-3 py-2 text-gray-500 italic">
+                            Nenhuma disciplina encontrada
+                          </div>
+                        );
+                      }
+
+                      return searchedSubjects.map(sub => {
+                        const course = courses.find(c => c.id === sub.courseId);
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setFilterSubjectId(sub.id);
+                              setIsFilterSubjectDropdownOpen(false);
+                              setFilterSubjectSearchText('');
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
+                              filterSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
+                            }`}
+                          >
+                            {filterCourseId === 'all' && course ? `${course.name.substring(0, 10)}... - ` : ''}{sub.name}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Busca textual por enunciado */}
+            <div>
+              <label className="block text-[10px] font-semibold text-brand-light uppercase tracking-wider mb-1">
+                Buscar Questão (Enunciado)
+              </label>
+              <input
+                type="text"
+                placeholder="Buscar por termo..."
+                value={searchQuestionQuery}
+                onChange={(e) => setSearchQuestionQuery(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+              />
+            </div>
+          </div>
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {questions.map(q => {
+            {filteredQuestions.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-xs">
+                Nenhuma questão encontrada para os filtros aplicados.
+              </div>
+            ) : (
+              filteredQuestions.map(q => {
               const subject = subjects.find(s => s.id === q.subjectId);
               return (
                 <div key={q.id} className="border border-brand-medium/40 bg-brand-dark/25 p-4 rounded-xl space-y-2.5">
@@ -362,8 +538,8 @@ export const AdminQuestions: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              );
-            })}
+            );
+          }))}
           </div>
         </div>
       </div>
