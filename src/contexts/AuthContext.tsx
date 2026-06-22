@@ -47,13 +47,24 @@ interface AuthContextType {
   addSystemUser: (email: string, fullName: string) => Promise<void>;
   removeSystemUser: (email: string) => Promise<void>;
   transferSupraStatus: (newSupraEmail: string) => Promise<void>;
+  isImpersonating: boolean;
+  impersonatorEmail: string | null;
+  stopImpersonating: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [realUser, setRealUser] = useState<User | null>(null);
+  const [realStudentProfile, setRealStudentProfile] = useState<StudentProfile | null>(null);
+  const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
+  const [impersonatedStudentProfile, setImpersonatedStudentProfile] = useState<StudentProfile | null>(null);
+  const [impersonatorEmail, setImpersonatorEmail] = useState<string | null>(null);
+
+  const user = impersonatedUser || realUser;
+  const studentProfile = impersonatedStudentProfile || realStudentProfile;
+  const isImpersonating = impersonatedUser !== null;
+
   const [students, setStudents] = useState<{ user: User; profile: StudentProfile }[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -251,8 +262,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSessionChange = async (session: any) => {
     if (!session) {
-      setUser(null);
-      setStudentProfile(null);
+      setRealUser(null);
+      setRealStudentProfile(null);
       setLoading(false);
       return;
     }
@@ -290,8 +301,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileErr || !profile) {
         console.error('Perfil não encontrado para o usuário:', suUser.id);
-        setUser(null);
-        setStudentProfile(null);
+        setRealUser(null);
+        setRealStudentProfile(null);
         return;
       }
 
@@ -315,7 +326,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSupra
       };
 
-      setUser(appUser);
+      setRealUser(appUser);
 
       // Se for estudante, buscar dados adicionais do plano e LGPD
       if (profile.role === 'student') {
@@ -356,7 +367,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .maybeSingle();
           const aiConsultantAccess = !!aiAccess;
 
-          setStudentProfile({
+          setRealStudentProfile({
             id: suUser.id,
             userId: suUser.id,
             plan: student.plan as 'basic' | 'pro' | 'premium',
@@ -368,7 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } else {
-        setStudentProfile(null);
+        setRealStudentProfile(null);
       }
 
       // Carregar as outras listas
@@ -398,7 +409,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Monitoramento de inatividade do usuário (Expiração em 2 horas)
   useEffect(() => {
-    if (!user) {
+    if (!realUser) {
       localStorage.removeItem('eadhelp_last_activity');
       return;
     }
@@ -438,9 +449,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       clearInterval(intervalId);
     };
-  }, [user]);
+  }, [realUser]);
 
-  // Login de simulação adaptado ao Supabase
+  const getMockStudent = (emailStr: string): { user: User; profile: StudentProfile } | null => {
+    const lowerEmail = emailStr.toLowerCase();
+    let nameStr = '';
+    let planStr: 'basic' | 'pro' | 'premium' = 'basic';
+    let mockId = '';
+
+    if (lowerEmail.includes('joao')) {
+      mockId = 'mock-joao-id';
+      nameStr = 'João Silva (Simulação)';
+      planStr = 'basic';
+    } else if (lowerEmail.includes('maria')) {
+      mockId = 'mock-maria-id';
+      nameStr = 'Maria Santos (Simulação)';
+      planStr = 'pro';
+    } else if (lowerEmail.includes('carlos')) {
+      mockId = 'mock-carlos-id';
+      nameStr = 'Carlos Oliveira (Simulação)';
+      planStr = 'premium';
+    } else {
+      return null;
+    }
+
+    return {
+      user: {
+        id: mockId,
+        email: lowerEmail,
+        name: nameStr,
+        role: 'student'
+      },
+      profile: {
+        id: mockId,
+        userId: mockId,
+        plan: planStr,
+        lgpdRankingConsent: true,
+        rankingPoints: 150,
+        summaryAccess: [],
+        aiConsultantAccess: planStr === 'premium' || planStr === 'pro',
+        examCycles: [
+          {
+            id: 'mock-cycle-1',
+            subjectName: 'Direito Constitucional',
+            correctAnswers: 8,
+            totalQuestions: 10,
+            percentage: 80,
+            completedAt: new Date().toISOString()
+          }
+        ]
+      }
+    };
+  };
+
+  const stopImpersonating = () => {
+    setImpersonatedUser(null);
+    setImpersonatedStudentProfile(null);
+    setImpersonatorEmail(null);
+    localStorage.removeItem('eadhelp_impersonated_email');
+    localStorage.removeItem('eadhelp_impersonator_email');
+  };
+
+  // Reatividade para atualizar o perfil impersonado caso a base de estudantes mude
+  useEffect(() => {
+    if (realUser?.role === 'admin' && impersonatedUser) {
+      const found = students.find(s => s.user.id === impersonatedUser.id);
+      if (found) {
+        setImpersonatedStudentProfile(found.profile);
+        setImpersonatedUser(found.user);
+      }
+    }
+  }, [students, impersonatedUser, realUser]);
+
+  // Restaurar impersonação do localStorage no carregamento inicial
+  useEffect(() => {
+    if (realUser?.role === 'admin' && students.length > 0 && !impersonatedUser) {
+      const impEmail = localStorage.getItem('eadhelp_impersonated_email');
+      if (impEmail) {
+        const found = students.find(s => s.user.email.toLowerCase() === impEmail.toLowerCase());
+        if (found) {
+          setImpersonatedUser(found.user);
+          setImpersonatedStudentProfile(found.profile);
+          setImpersonatorEmail(realUser.email);
+        } else {
+          const mock = getMockStudent(impEmail);
+          if (mock) {
+            setImpersonatedUser(mock.user);
+            setImpersonatedStudentProfile(mock.profile);
+            setImpersonatorEmail(realUser.email);
+          }
+        }
+      }
+    }
+  }, [realUser, students]);
+
+  // Login de simulação adaptado ao Supabase com impersonação local
   const loginAs = async (roleOrEmail: string) => {
     let email = '';
     let name = '';
@@ -463,6 +566,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email = roleOrEmail.trim().toLowerCase();
       name = email.split('@')[0];
       isPredefinedRole = false;
+    }
+
+    // Se já estiver logado como Admin e a solicitação for outro usuário (Impersonation)
+    if (realUser?.role === 'admin' && roleOrEmail !== 'admin') {
+      const found = students.find(s => s.user.email.toLowerCase() === email.toLowerCase());
+      if (found) {
+        setImpersonatedUser(found.user);
+        setImpersonatedStudentProfile(found.profile);
+        setImpersonatorEmail(realUser.email);
+        localStorage.setItem('eadhelp_impersonated_email', found.user.email);
+        localStorage.setItem('eadhelp_impersonator_email', realUser.email);
+      } else {
+        const mock = getMockStudent(email);
+        if (mock) {
+          setImpersonatedUser(mock.user);
+          setImpersonatedStudentProfile(mock.profile);
+          setImpersonatorEmail(realUser.email);
+          localStorage.setItem('eadhelp_impersonated_email', mock.user.email);
+          localStorage.setItem('eadhelp_impersonator_email', realUser.email);
+        } else {
+          // Se for e-mail arbitrário e não for João/Maria/Carlos, criar mock genérico
+          const genId = 'mock-gen-' + Math.random().toString(36).substring(2, 9);
+          const genMock = {
+            user: { id: genId, email, name, role: 'student' as const },
+            profile: { id: genId, userId: genId, plan: 'basic' as const, lgpdRankingConsent: true, rankingPoints: 0, summaryAccess: [], aiConsultantAccess: false, examCycles: [] }
+          };
+          setImpersonatedUser(genMock.user);
+          setImpersonatedStudentProfile(genMock.profile);
+          setImpersonatorEmail(realUser.email);
+          localStorage.setItem('eadhelp_impersonated_email', genMock.user.email);
+          localStorage.setItem('eadhelp_impersonator_email', realUser.email);
+        }
+      }
+      return;
+    }
+
+    // Se a solicitação for retornar para admin e já estamos impersonando
+    if (roleOrEmail === 'admin' && impersonatedUser) {
+      stopImpersonating();
+      return;
     }
 
     const password = 'TestPassword123!';
@@ -530,6 +673,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    stopImpersonating();
     await supabase.auth.signOut();
   };
 
@@ -914,7 +1058,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleError('Remover Administrador', e);
       throw e;
     }
-    if (user) await loadData(user.id, user.role);
+    if (realUser) await loadData(realUser.id, realUser.role);
   };
 
   const transferSupraStatus = async (newSupraEmail: string) => {
@@ -954,7 +1098,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleError('Responder Mensagem de Suporte', error);
       throw error;
     }
-    if (user) await loadData(user.id, user.role);
+    if (realUser) await loadData(realUser.id, realUser.role);
   };
 
   const addStudentPoints = (_points: number) => {
@@ -976,7 +1120,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleError('Gravar Ciclo de Simulado', error);
       throw error;
     }
-    await handleSessionChange({ user });
+    if (realUser) {
+      await loadData(realUser.id, realUser.role);
+    }
   };
 
   const toggleLgpdConsent = async () => {
@@ -989,7 +1135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleError('Atualizar Consentimento LGPD', error);
       throw error;
     }
-    await handleSessionChange({ user });
+    if (realUser) {
+      await loadData(realUser.id, realUser.role);
+    }
   };
 
   return (
@@ -1038,7 +1186,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleLgpdConsent,
         addSystemUser,
         removeSystemUser,
-        transferSupraStatus
+        transferSupraStatus,
+        isImpersonating,
+        impersonatorEmail,
+        stopImpersonating
       }}
     >
       {children}
