@@ -515,7 +515,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (realUser?.role === 'admin' && impersonatedUser) {
       const found = students.find(s => s.user.id === impersonatedUser.id);
       if (found) {
-        setImpersonatedStudentProfile(found.profile);
+        let expectedPlan: 'basic' | 'pro' | 'premium' = 'basic';
+        if (found.user.email.toLowerCase().includes('maria')) expectedPlan = 'pro';
+        else if (found.user.email.toLowerCase().includes('carlos')) expectedPlan = 'premium';
+        else expectedPlan = found.profile.plan;
+
+        const adjustedProfile = {
+          ...found.profile,
+          plan: expectedPlan,
+          aiConsultantAccess: expectedPlan === 'premium' ? true : found.profile.aiConsultantAccess
+        };
+
+        setImpersonatedStudentProfile(adjustedProfile);
         setImpersonatedUser(found.user);
       }
     }
@@ -527,9 +538,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const impEmail = localStorage.getItem('eadhelp_impersonated_email');
       if (impEmail) {
         const found = students.find(s => s.user.email.toLowerCase() === impEmail.toLowerCase());
+        
+        let expectedPlan: 'basic' | 'pro' | 'premium' = 'basic';
+        if (impEmail.toLowerCase().includes('maria')) expectedPlan = 'pro';
+        else if (impEmail.toLowerCase().includes('carlos')) expectedPlan = 'premium';
+
         if (found) {
+          const adjustedProfile = {
+            ...found.profile,
+            plan: expectedPlan,
+            aiConsultantAccess: expectedPlan === 'premium' ? true : found.profile.aiConsultantAccess
+          };
           setImpersonatedUser(found.user);
-          setImpersonatedStudentProfile(found.profile);
+          setImpersonatedStudentProfile(adjustedProfile);
           setImpersonatorEmail(realUser.email);
         } else {
           const mock = getMockStudent(impEmail);
@@ -571,9 +592,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Se já estiver logado como Admin e a solicitação for outro usuário (Impersonation)
     if (realUser?.role === 'admin' && roleOrEmail !== 'admin') {
       const found = students.find(s => s.user.email.toLowerCase() === email.toLowerCase());
+      
+      let expectedPlan: 'basic' | 'pro' | 'premium' = 'basic';
+      if (email.toLowerCase().includes('maria')) expectedPlan = 'pro';
+      else if (email.toLowerCase().includes('carlos')) expectedPlan = 'premium';
+
       if (found) {
+        // Atualizar o plano no banco em segundo plano para consistência
+        if (found.profile.plan !== expectedPlan) {
+          supabase
+            .from('students')
+            .update({ plan: expectedPlan })
+            .eq('id', found.user.id)
+            .then(() => {
+              loadData(realUser.id, realUser.role);
+            });
+        }
+
+        const adjustedProfile = {
+          ...found.profile,
+          plan: expectedPlan,
+          aiConsultantAccess: expectedPlan === 'premium' ? true : found.profile.aiConsultantAccess
+        };
+
         setImpersonatedUser(found.user);
-        setImpersonatedStudentProfile(found.profile);
+        setImpersonatedStudentProfile(adjustedProfile);
         setImpersonatorEmail(realUser.email);
         localStorage.setItem('eadhelp_impersonated_email', found.user.email);
         localStorage.setItem('eadhelp_impersonator_email', realUser.email);
