@@ -21,7 +21,14 @@ import {
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loginAs, logout, globalError, clearGlobalError } = useAuth();
+  const { 
+    user, 
+    loginAs, 
+    logout, 
+    globalError, 
+    clearGlobalError,
+    isImpersonating
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -95,6 +102,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
 
         <div className="flex items-center gap-3">
+          {user && isImpersonating && (
+            <button
+              onClick={() => handleQuickLogin('admin')}
+              className="flex items-center gap-1.5 bg-yellow-600/20 hover:bg-yellow-600/35 text-yellow-300 border border-yellow-500/30 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-md shadow-yellow-500/5 animate-pulse cursor-pointer mr-2"
+              title="Voltar para o meu Usuário Administrador"
+            >
+              <UserCheck size={14} />
+              <span>Voltar ao Admin</span>
+            </button>
+          )}
+
           {user ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col text-right">
@@ -246,6 +264,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             Use este painel para alternar entre diferentes personas e testar restrições de planos e a área de administração.
           </p>
           <div className="space-y-1.5 text-xs">
+            {isImpersonating && (
+              <button
+                onClick={() => handleQuickLogin('admin')}
+                className="w-full mb-2 bg-red-950/30 hover:bg-red-900/40 text-red-300 border border-red-500/20 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <LogOut size={12} />
+                <span>Voltar ao Administrador</span>
+              </button>
+            )}
             <button 
               onClick={() => handleQuickLogin('basic')} 
               className={`w-full text-left px-2.5 py-1.5 rounded flex items-center justify-between hover:bg-brand-medium/55 ${
