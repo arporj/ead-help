@@ -14,16 +14,21 @@ export const AdminContent: React.FC = () => {
   // Form State: Summary
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [formCourseId, setFormCourseId] = useState<string>('');
   const [subjectId, setSubjectId] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
 
-  // Sync subjectId when subjects list loads or changes
+  // Sincronizar formCourseId e subjectId iniciais quando as disciplinas carregam
   useEffect(() => {
-    if (sortedSubjects.length > 0 && (!subjectId || !sortedSubjects.some(s => s.id === subjectId))) {
-      setSubjectId(sortedSubjects[0].id);
+    if (sortedSubjects.length > 0 && !formCourseId) {
+      const firstSub = sortedSubjects[0];
+      if (firstSub) {
+        setFormCourseId(firstSub.courseId);
+        setSubjectId(firstSub.id);
+      }
     }
-  }, [sortedSubjects, subjectId]);
+  }, [sortedSubjects, formCourseId]);
 
   // Filter States for Published Summaries
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
@@ -106,6 +111,13 @@ export const AdminContent: React.FC = () => {
     setTitle(sum.title);
     setDescription(sum.description);
     setSubjectId(sum.subjectId);
+
+    // Sincronizar o curso correspondente à disciplina selecionada na edição
+    const subject = subjects.find(s => s.id === sum.subjectId);
+    if (subject) {
+      setFormCourseId(subject.courseId);
+    }
+
     setIsPremium(sum.isPremium);
   };
 
@@ -114,6 +126,15 @@ export const AdminContent: React.FC = () => {
     setTitle('');
     setDescription('');
     setIsPremium(false);
+
+    // Resetar para o primeiro curso e disciplina disponíveis
+    if (sortedSubjects.length > 0) {
+      setFormCourseId(sortedSubjects[0].courseId);
+      setSubjectId(sortedSubjects[0].id);
+    } else {
+      setFormCourseId('');
+      setSubjectId('');
+    }
   };
 
   const handleDeleteClick = async (id: string) => {
@@ -202,28 +223,60 @@ export const AdminContent: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
-                Disciplina Associada
-              </label>
-              <select
-                value={subjectId || (sortedSubjects[0]?.id || '')}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
-              >
-                {sortedSubjects.length === 0 ? (
-                  <option value="">Nenhuma disciplina cadastrada</option>
-                ) : (
-                  sortedSubjects.map(sub => {
-                    const courseName = courses.find(c => c.id === sub.courseId)?.name || 'Curso';
-                    return (
-                      <option key={sub.id} value={sub.id}>
-                        {courseName.substring(0, 12)}... - {sub.name} (Sem. {sub.semester})
+            {/* Combo de Curso e Disciplina em Cascata */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                  Curso
+                </label>
+                <select
+                  value={formCourseId}
+                  onChange={(e) => {
+                    const nextCourseId = e.target.value;
+                    setFormCourseId(nextCourseId);
+                    const courseSubjects = sortedSubjects.filter(s => s.courseId === nextCourseId);
+                    if (courseSubjects.length > 0) {
+                      setSubjectId(courseSubjects[0].id);
+                    } else {
+                      setSubjectId('');
+                    }
+                  }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
+                >
+                  {courses.length === 0 ? (
+                    <option value="">Nenhum curso cadastrado</option>
+                  ) : (
+                    courses.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
-                    );
-                  })
-                )}
-              </select>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
+                  Disciplina Associada
+                </label>
+                <select
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none"
+                >
+                  {sortedSubjects.filter(sub => sub.courseId === formCourseId).length === 0 ? (
+                    <option value="">Nenhuma disciplina neste curso</option>
+                  ) : (
+                    sortedSubjects
+                      .filter(sub => sub.courseId === formCourseId)
+                      .map(sub => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name} (Sem. {sub.semester})
+                        </option>
+                      ))
+                  )}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-1.5">
