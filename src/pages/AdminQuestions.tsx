@@ -33,6 +33,16 @@ export const AdminQuestions: React.FC = () => {
     }
   }, [sortedSubjects, formCourseId]);
 
+  // Sincronizar o texto de busca do formulário com a disciplina selecionada
+  useEffect(() => {
+    const activeSub = subjects.find(s => s.id === subjectId);
+    if (activeSub) {
+      setFormSubjectSearchText(activeSub.name);
+    } else {
+      setFormSubjectSearchText('');
+    }
+  }, [subjectId, subjects]);
+
   // Filter States
   const [filterCourseId, setFilterCourseId] = useState<string>('all');
   const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
@@ -310,20 +320,24 @@ export const AdminQuestions: React.FC = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={
-                      subjects.find(s => s.id === subjectId)?.name || "Selecione a Disciplina..."
-                    }
+                    placeholder="Selecione ou digite para filtrar..."
                     value={formSubjectSearchText}
                     onFocus={() => setIsFormSubjectDropdownOpen(true)}
                     onChange={(e) => {
                       setFormSubjectSearchText(e.target.value);
                       setIsFormSubjectDropdownOpen(true);
                     }}
-                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3.5 py-2 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-white placeholder:font-medium"
+                    className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-3.5 pr-8 py-2 text-xs text-white focus:border-brand-light focus:outline-none placeholder:text-gray-500"
                   />
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-[10px]">
-                    ▼
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsFormSubjectDropdownOpen(!isFormSubjectDropdownOpen)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className={`w-3.5 h-3.5 transition-transform ${isFormSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
                 </div>
 
                 {isFormSubjectDropdownOpen && (
@@ -332,7 +346,8 @@ export const AdminQuestions: React.FC = () => {
                       className="fixed inset-0 z-10" 
                       onClick={() => {
                         setIsFormSubjectDropdownOpen(false);
-                        setFormSubjectSearchText('');
+                        const activeSub = subjects.find(s => s.id === subjectId);
+                        setFormSubjectSearchText(activeSub ? activeSub.name : '');
                       }}
                     />
                     <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
@@ -357,7 +372,6 @@ export const AdminQuestions: React.FC = () => {
                             onClick={() => {
                               setSubjectId(sub.id);
                               setIsFormSubjectDropdownOpen(false);
-                              setFormSubjectSearchText('');
                             }}
                             className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
                               subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
