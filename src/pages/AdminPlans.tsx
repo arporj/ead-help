@@ -20,6 +20,12 @@ export const AdminPlans: React.FC = () => {
     }
   }, [plansConfig]);
 
+  const formatCurrencyInput = (valStr: string): number => {
+    const cleanValue = valStr.replace(/\D/g, '');
+    if (!cleanValue) return 0;
+    return parseInt(cleanValue, 10) / 100;
+  };
+
   const handleInputChange = (
     index: number,
     field: keyof PlanConfig,
@@ -118,12 +124,10 @@ export const AdminPlans: React.FC = () => {
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
                           <input
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            type="text"
                             disabled={isBasic}
-                            value={config.priceMonthly}
-                            onChange={(e) => handleInputChange(idx, 'priceMonthly', parseFloat(e.target.value) || 0)}
+                            value={config.priceMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            onChange={(e) => handleInputChange(idx, 'priceMonthly', formatCurrencyInput(e.target.value))}
                             className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none disabled:opacity-50"
                             required
                           />
@@ -135,12 +139,10 @@ export const AdminPlans: React.FC = () => {
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
                           <input
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            type="text"
                             disabled={isBasic}
-                            value={config.priceQuarterly}
-                            onChange={(e) => handleInputChange(idx, 'priceQuarterly', parseFloat(e.target.value) || 0)}
+                            value={config.priceQuarterly.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            onChange={(e) => handleInputChange(idx, 'priceQuarterly', formatCurrencyInput(e.target.value))}
                             className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none disabled:opacity-50"
                             required
                           />
@@ -198,11 +200,9 @@ export const AdminPlans: React.FC = () => {
                             <div className="relative">
                               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
                               <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={config.additionalSubjectPrice}
-                                onChange={(e) => handleInputChange(idx, 'additionalSubjectPrice', parseFloat(e.target.value) || 0)}
+                                type="text"
+                                value={config.additionalSubjectPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                onChange={(e) => handleInputChange(idx, 'additionalSubjectPrice', formatCurrencyInput(e.target.value))}
                                 className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
                                 required
                               />
@@ -214,11 +214,9 @@ export const AdminPlans: React.FC = () => {
                             <div className="relative">
                               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
                               <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={config.additionalSummaryPrice}
-                                onChange={(e) => handleInputChange(idx, 'additionalSummaryPrice', parseFloat(e.target.value) || 0)}
+                                type="text"
+                                value={config.additionalSummaryPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                onChange={(e) => handleInputChange(idx, 'additionalSummaryPrice', formatCurrencyInput(e.target.value))}
                                 className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
                                 required
                               />
