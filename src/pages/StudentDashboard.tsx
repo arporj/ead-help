@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download, BookOpen, Search, Check, RefreshCw } from 'lucide-react';
@@ -14,6 +14,13 @@ export const StudentDashboard: React.FC = () => {
   const [subjectSearchText, setSubjectSearchText] = useState('');
   const [subjectCourseId, setSubjectCourseId] = useState('all');
   const [isSubmittingGrade, setIsSubmittingGrade] = useState(false);
+
+  // Auto-selecionar curso se houver apenas uma opção
+  useEffect(() => {
+    if (courses && courses.length === 1) {
+      setSubjectCourseId(courses[0].id);
+    }
+  }, [courses]);
 
   // Mapear plano do aluno
   const plan = studentProfile?.plan || 'basic';
@@ -40,6 +47,11 @@ export const StudentDashboard: React.FC = () => {
     }
     return a.name.localeCompare(b.name, 'pt-BR');
   });
+
+  // Semestres distintos presentes nas disciplinas filtradas
+  const distinctSemesters = Array.from(
+    new Set(sortedSubjectsForSelection.map(s => s.semester))
+  ).sort((a, b) => a - b);
 
   const handleToggleSubject = (subjectId: string) => {
     if (selectedSubjectIds.includes(subjectId)) {
@@ -117,6 +129,19 @@ export const StudentDashboard: React.FC = () => {
 
           {/* Filtros */}
           <div className="flex flex-col sm:flex-row gap-3">
+            <div className="w-full sm:w-48">
+              <select
+                value={subjectCourseId}
+                onChange={(e) => setSubjectCourseId(e.target.value)}
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-2.5 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer"
+              >
+                {courses.length > 1 && <option value="all">Todos os Cursos</option>}
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -124,59 +149,61 @@ export const StudentDashboard: React.FC = () => {
                 placeholder="Buscar disciplina por nome..."
                 value={subjectSearchText}
                 onChange={(e) => setSubjectSearchText(e.target.value)}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:border-brand-light focus:outline-none"
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:border-brand-light focus:outline-none"
               />
-            </div>
-
-            <div className="w-full sm:w-48">
-              <select
-                value={subjectCourseId}
-                onChange={(e) => setSubjectCourseId(e.target.value)}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-3 py-2 text-xs text-white focus:border-brand-light focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todos os Cursos</option>
-                {courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
             </div>
           </div>
 
-          {/* Grid de Disciplinas */}
-          <div className="max-h-80 overflow-y-auto border border-brand-medium/35 bg-brand-dark/30 rounded-xl p-3.5 space-y-2.5">
-            {sortedSubjectsForSelection.length === 0 ? (
+          {/* Grid de Disciplinas Agrupadas */}
+          <div className="max-h-96 overflow-y-auto border border-brand-medium/35 bg-brand-dark/30 rounded-xl p-4 space-y-6">
+            {distinctSemesters.length === 0 ? (
               <div className="text-center py-8 text-gray-500 text-xs italic">
                 Nenhuma disciplina encontrada.
               </div>
             ) : (
-              sortedSubjectsForSelection.map(subj => {
-                const isSelected = selectedSubjectIds.includes(subj.id);
-                const courseName = courses.find(c => c.id === subj.courseId)?.name || 'Curso';
-
+              distinctSemesters.map(semester => {
+                const subjectsInSemester = sortedSubjectsForSelection.filter(s => s.semester === semester);
+                
                 return (
-                  <div
-                    key={subj.id}
-                    onClick={() => handleToggleSubject(subj.id)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
-                      isSelected
-                        ? 'bg-brand-medium/25 border-brand-light/60 text-white shadow-md'
-                        : 'bg-brand-dark/25 border-brand-medium/20 text-gray-450 hover:border-brand-medium/60 hover:text-gray-300'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <span className="font-bold text-[9px] uppercase text-brand-light bg-brand-medium/55 px-1.5 py-0.5 rounded mr-2">
-                        Semestre {subj.semester}
+                  <div key={semester} className="space-y-2.5">
+                    {/* Cabeçalho do Semestre */}
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-brand-medium/20">
+                      <span className="font-extrabold text-[10px] uppercase text-brand-light bg-brand-medium/30 px-2 py-0.5 rounded-md">
+                        {semester}º Semestre
                       </span>
-                      <span className="font-semibold text-xs text-white">{subj.name}</span>
-                      <span className="text-[10px] text-gray-450 block mt-0.5">{courseName}</span>
+                      <span className="text-[10px] text-gray-500">({subjectsInSemester.length} {subjectsInSemester.length === 1 ? 'disciplina' : 'disciplinas'})</span>
                     </div>
 
-                    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
-                      isSelected
-                        ? 'bg-brand-light border-brand-light text-brand-dark'
-                        : 'border-brand-medium/60'
-                    }`}>
-                      {isSelected && <Check size={14} strokeWidth={3} />}
+                    <div className="space-y-2">
+                      {subjectsInSemester.map(subj => {
+                        const isSelected = selectedSubjectIds.includes(subj.id);
+                        const courseName = courses.find(c => c.id === subj.courseId)?.name || 'Curso';
+
+                        return (
+                          <div
+                            key={subj.id}
+                            onClick={() => handleToggleSubject(subj.id)}
+                            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 select-none ${
+                              isSelected
+                                ? 'bg-brand-medium/25 border-brand-light/60 text-white shadow-md'
+                                : 'bg-brand-dark/25 border-brand-medium/20 text-gray-450 hover:border-brand-medium/60 hover:text-gray-300'
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <span className="font-semibold text-xs text-white">{subj.name}</span>
+                              <span className="text-[10px] text-gray-450 block mt-0.5">{courseName}</span>
+                            </div>
+
+                            <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'bg-brand-light border-brand-light text-brand-dark'
+                                : 'border-brand-medium/60'
+                            }`}>
+                              {isSelected && <Check size={14} strokeWidth={3} />}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
