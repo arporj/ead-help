@@ -239,7 +239,7 @@ export const StudentPlans: React.FC = () => {
                 : 'bg-brand-light hover:bg-white text-brand-dark shadow-md shadow-brand-light/5'
             }`}
           >
-            {currentPlan === 'premium' ? 'Solicitar Renovação' : 'Obter Plano Aprovação'}
+            {currentPlan === 'premium' ? 'Solicitar Renovação' : 'Assinar Plano Aprovação'}
           </button>
         </div>
       </div>
