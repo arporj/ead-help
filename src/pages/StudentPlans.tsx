@@ -87,6 +87,15 @@ export const StudentPlans: React.FC = () => {
                 <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
                 <span>Histórico dos simulados realizados</span>
               </li>
+              <li className="flex items-start gap-2 text-xs font-bold text-brand-light border-t border-brand-medium/35 pt-2 mt-2">
+                <span>Adicionais Disponíveis</span>
+              </li>
+              <li className="flex items-start gap-2 text-[10px] text-gray-450">
+                <span>Matéria extra semestral: R$ {basicPlan.additionalSubjectPrice?.toFixed(2).replace('.', ',')}</span>
+              </li>
+              <li className="flex items-start gap-2 text-[10px] text-gray-450">
+                <span>Resumo avulso: R$ {basicPlan.additionalSummaryPrice?.toFixed(2).replace('.', ',')}</span>
+              </li>
             </ul>
           </div>
           
