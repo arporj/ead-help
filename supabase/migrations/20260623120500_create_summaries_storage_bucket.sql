@@ -3,9 +3,6 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('summaries', 'summaries', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
--- Habilitar RLS na tabela storage.objects se ainda não estiver habilitada
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
 -- 1. Política para permitir leitura pública dos objetos do bucket 'summaries'
 CREATE POLICY "Permitir leitura de resumos para autenticados"
 ON storage.objects FOR SELECT
