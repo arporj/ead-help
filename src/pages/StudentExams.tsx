@@ -118,7 +118,7 @@ export const StudentExams: React.FC = () => {
 
   if (isExamRunning && examQuestions.length > 0) {
     const q = examQuestions[currentIdx];
-    const progressPercent = ((currentIdx + 1) / 10) * 100;
+    const progressPercent = (currentIdx / 10) * 100;
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
