@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { Send, MessageSquare, Clock, CornerDownRight, CheckCircle2 } from 'lucide-react';
 
 export const StudentSupport: React.FC = () => {
   const { user, supportMessages, sendSupportMessage } = useAuth();
+  const location = useLocation();
   const [messageText, setMessageText] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (location.state && (location.state as any).message) {
+      setMessageText((location.state as any).message);
+    }
+  }, [location.state]);
 
   // Filter messages belonging only to the current logged student
   const myMessages = supportMessages.filter(msg => msg.studentId === user?.id);
