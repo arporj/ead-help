@@ -70,7 +70,7 @@ export const StudentPlans: React.FC = () => {
             </div>
             <p className="mt-4 text-xs text-gray-400 leading-relaxed">Experimente a plataforma antes de assinar.</p>
             
-            <ul className="mt-6 space-y-3">
+            <ul className="mt-6 space-y-2.5">
               <li className="flex items-start gap-2 text-xs">
                 <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
                 <span>1 Quiz de Simulado por dia</span>
@@ -88,12 +88,12 @@ export const StudentPlans: React.FC = () => {
                 <span>Histórico dos simulados realizados</span>
               </li>
               <li className="flex items-start gap-2 text-xs font-bold text-brand-light border-t border-brand-medium/35 pt-2 mt-2">
-                <span>Adicionais Disponíveis</span>
+                <span>Grade: Apenas simulado aberto</span>
               </li>
-              <li className="flex items-start gap-2 text-[10px] text-gray-450">
+              <li className="flex items-start gap-2 text-[10px] text-gray-400">
                 <span>Matéria extra semestral: R$ {basicPlan.additionalSubjectPrice?.toFixed(2).replace('.', ',')}</span>
               </li>
-              <li className="flex items-start gap-2 text-[10px] text-gray-450">
+              <li className="flex items-start gap-2 text-[10px] text-gray-400">
                 <span>Resumo avulso: R$ {basicPlan.additionalSummaryPrice?.toFixed(2).replace('.', ',')}</span>
               </li>
             </ul>
