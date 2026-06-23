@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download, BookOpen, Search, Check, RefreshCw } from 'lucide-react';
 import type { Summary } from '../types';
 
 export const StudentDashboard: React.FC = () => {
   const { studentProfile, summaries, subjects, courses, saveStudentSubjects, plansConfig } = useAuth();
+  const navigate = useNavigate();
   const [readingSummary, setReadingSummary] = useState<Summary | null>(null);
 
   // States para a tela de selecao de disciplinas
@@ -279,12 +281,12 @@ export const StudentDashboard: React.FC = () => {
               return (
                 <div 
                   key={sum.id} 
-                  className={`bg-brand-medium/10 border p-5 rounded-2xl flex flex-col justify-between transition-all group ${
+                  className={`bg-brand-medium/10 border p-5 rounded-2xl flex flex-col justify-between transition-all group cursor-pointer ${
                     hasAccess 
-                      ? 'border-brand-medium/40 hover:border-brand-light/50 cursor-pointer' 
-                      : 'border-brand-medium/30 opacity-75'
+                      ? 'border-brand-medium/40 hover:border-brand-light/50' 
+                      : 'border-brand-medium/30 opacity-75 hover:border-red-500/30'
                   }`}
-                  onClick={() => hasAccess && handleRead(sum)}
+                  onClick={() => hasAccess ? handleRead(sum) : navigate('/student/plans')}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -321,9 +323,15 @@ export const StudentDashboard: React.FC = () => {
                         Ler Resumo <ChevronRight size={14} />
                       </button>
                     ) : (
-                      <div className="text-[10px] text-red-350 font-bold flex items-center gap-1 bg-red-950/20 px-2.5 py-1 rounded-lg border border-red-550/15">
-                        <Lock size={11} /> Bloqueado (Cota Excedida)
-                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/student/plans');
+                        }}
+                        className="text-[10px] text-red-350 hover:text-red-300 font-bold flex items-center gap-1 bg-red-950/20 hover:bg-red-950/45 px-2.5 py-1 rounded-lg border border-red-550/15 transition-all cursor-pointer"
+                      >
+                        <Lock size={11} /> Ver Planos
+                      </button>
                     )}
                   </div>
                 </div>
