@@ -13,6 +13,7 @@ import { StudentBDQ } from './pages/StudentBDQ';
 import { StudentAIConsultant } from './pages/StudentAIConsultant';
 import { StudentRanking } from './pages/StudentRanking';
 import { StudentSupport } from './pages/StudentSupport';
+import { StudentPlans } from './pages/StudentPlans';
 
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminStudents } from './pages/AdminStudents';
@@ -89,6 +90,16 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRole="student">
                 <Layout>
                   <StudentSupport />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/plans" 
+            element={
+              <ProtectedRoute allowedRole="student">
+                <Layout>
+                  <StudentPlans />
                 </Layout>
               </ProtectedRoute>
             } 
