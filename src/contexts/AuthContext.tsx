@@ -23,9 +23,9 @@ interface AuthContextType {
   updateStudentSummaryAccess: (studentId: string, summaryIds: string[]) => Promise<void>;
   toggleAiAccess: (studentId: string) => Promise<void>;
   addQuestion: (question: Omit<Question, 'id'>) => Promise<void>;
-  addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>) => Promise<void>;
+  addSummary: (summary: Omit<Summary, 'id' | 'pdfUrl'>, file?: File) => Promise<void>;
   deleteSummary: (id: string) => Promise<void>;
-  updateSummary: (id: string, summary: Partial<Omit<Summary, 'id' | 'pdfUrl'>>) => Promise<void>;
+  updateSummary: (id: string, summary: Partial<Omit<Summary, 'id' | 'pdfUrl'>>, file?: File) => Promise<void>;
   deleteQuestion: (id: string) => Promise<void>;
   updateQuestion: (id: string, question: Omit<Question, 'id'>) => Promise<void>;
   addCourse: (name: string) => Promise<void>;
@@ -850,14 +850,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
-  const addSummary = async (summaryData: Omit<Summary, 'id' | 'pdfUrl'>) => {
+  const addSummary = async (summaryData: Omit<Summary, 'id' | 'pdfUrl'>, file?: File) => {
+    let pdfUrl = '#';
+
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `resumos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('summaries')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        handleError('Upload do PDF', uploadError);
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('summaries')
+        .getPublicUrl(filePath);
+
+      pdfUrl = publicUrlData.publicUrl;
+    }
+
     const { error } = await supabase
       .from('summaries')
       .insert({
         subject_id: summaryData.subjectId,
         title: summaryData.title,
         description: summaryData.description,
-        pdf_url: '#',
+        pdf_url: pdfUrl,
         is_premium: summaryData.isPremium
       });
     if (error) {
@@ -868,6 +891,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteSummary = async (id: string) => {
+    const { data: currentSum } = await supabase
+      .from('summaries')
+      .select('pdf_url')
+      .eq('id', id)
+      .maybeSingle();
+
+    let oldFilePath: string | null = null;
+    if (currentSum && currentSum.pdf_url && currentSum.pdf_url !== '#') {
+      const match = currentSum.pdf_url.match(/\/summaries\/(.+)$/);
+      if (match && match[1]) {
+        oldFilePath = decodeURIComponent(match[1]);
+      }
+    }
+
     const { error } = await supabase
       .from('summaries')
       .delete()
@@ -876,23 +913,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleError('Excluir Resumo', error);
       throw error;
     }
+
+    if (oldFilePath) {
+      await supabase.storage.from('summaries').remove([oldFilePath]);
+    }
+
     if (user) await loadData(user.id, user.role);
   };
 
-  const updateSummary = async (id: string, summaryData: Partial<Omit<Summary, 'id' | 'pdfUrl'>>) => {
+  const updateSummary = async (id: string, summaryData: Partial<Omit<Summary, 'id' | 'pdfUrl'>>, file?: File) => {
+    let pdfUrl: string | undefined = undefined;
+
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `resumos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('summaries')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        handleError('Upload do PDF na Atualização', uploadError);
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('summaries')
+        .getPublicUrl(filePath);
+
+      pdfUrl = publicUrlData.publicUrl;
+    }
+
+    let oldFilePath: string | null = null;
+    if (file) {
+      const { data: currentSum } = await supabase
+        .from('summaries')
+        .select('pdf_url')
+        .eq('id', id)
+        .maybeSingle();
+      if (currentSum && currentSum.pdf_url && currentSum.pdf_url !== '#') {
+        const match = currentSum.pdf_url.match(/\/summaries\/(.+)$/);
+        if (match && match[1]) {
+          oldFilePath = decodeURIComponent(match[1]);
+        }
+      }
+    }
+
+    const updatePayload: any = {
+      subject_id: summaryData.subjectId,
+      title: summaryData.title,
+      description: summaryData.description,
+      is_premium: summaryData.isPremium
+    };
+
+    if (pdfUrl !== undefined) {
+      updatePayload.pdf_url = pdfUrl;
+    }
+
     const { error } = await supabase
       .from('summaries')
-      .update({
-        subject_id: summaryData.subjectId,
-        title: summaryData.title,
-        description: summaryData.description,
-        is_premium: summaryData.isPremium
-      })
+      .update(updatePayload)
       .eq('id', id);
     if (error) {
       handleError('Atualizar Resumo', error);
       throw error;
     }
+
+    if (oldFilePath) {
+      await supabase.storage.from('summaries').remove([oldFilePath]);
+    }
+
     if (user) await loadData(user.id, user.role);
   };
 
