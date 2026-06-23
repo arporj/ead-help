@@ -22,8 +22,10 @@ export interface StudentProfile {
   lgpdRankingConsent: boolean;
   rankingPoints: number;
   summaryAccess: string[]; // List of summary IDs allowed for avulso access
+  summaryAccessDetails?: { summaryId: string; accessType: 'admin' | 'benefit' | 'purchased' }[];
   aiConsultantAccess: boolean; // Custom access purchased
   examCycles: ExamCycle[]; // List of completed cycles
+  studentSubjects?: StudentSubject[]; // List of contracted subjects
 }
 
 export interface Course {
@@ -81,3 +83,24 @@ export interface SystemUser {
   isSupra: boolean;
   createdAt: string;
 }
+
+export interface PlanConfig {
+  id: string;
+  planType: 'basic' | 'pro' | 'premium';
+  name: string;
+  priceMonthly: number;
+  priceQuarterly: number;
+  maxSubjects: number;
+  includedPremiumSummaries: number;
+  additionalSubjectPrice: number;
+  additionalSummaryPrice: number;
+}
+
+export interface StudentSubject {
+  id: string;
+  studentId: string;
+  subjectId: string;
+  isAdditional: boolean;
+  createdAt: string;
+}
+
