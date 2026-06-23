@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, FileText, CheckCircle2, Edit, Trash2, X } from 'lucide-react';
+import { BookOpen, FileText, CheckCircle2, Edit, Trash2, X, UploadCloud, Eye, Download, Loader2 } from 'lucide-react';
 
 export const AdminContent: React.FC = () => {
   const { courses, subjects, summaries, addSummary, deleteSummary, updateSummary } = useAuth();
@@ -20,6 +20,13 @@ export const AdminContent: React.FC = () => {
   const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
   const [isFormSubjectDropdownOpen, setIsFormSubjectDropdownOpen] = useState(false);
   const [formSubjectSearchText, setFormSubjectSearchText] = useState('');
+
+  // Upload and Preview States
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sincronizar formCourseId e subjectId iniciais quando as disciplinas carregam
   useEffect(() => {
@@ -77,19 +84,36 @@ export const AdminContent: React.FC = () => {
   });
 
   // Handlers
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf') {
+        alert('Apenas arquivos PDF são permitidos!');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
   const handleSaveSummary = async (e: React.FormEvent) => {
     e.preventDefault();
     const activeSubjectId = subjectId || subjects[0]?.id;
     if (!title || !description || !activeSubjectId) return;
 
+    if (!editingSummaryId && !selectedFile) {
+      alert('Por favor, selecione um arquivo PDF para publicar o resumo.');
+      return;
+    }
+
     try {
+      setIsUploading(true);
       if (editingSummaryId) {
         await updateSummary(editingSummaryId, {
           title,
           description,
           subjectId: activeSubjectId,
           isPremium
-        });
+        }, selectedFile || undefined);
         setEditingSummaryId(null);
         showSuccess('Resumo atualizado com sucesso!');
       } else {
@@ -98,15 +122,20 @@ export const AdminContent: React.FC = () => {
           description,
           subjectId: activeSubjectId,
           isPremium
-        });
+        }, selectedFile || undefined);
         showSuccess('Resumo publicado com sucesso!');
       }
 
       setTitle('');
       setDescription('');
       setIsPremium(false);
+      setSelectedFile(null);
+      setCurrentPdfUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       // O erro global já é tratado pelo AuthContext
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -123,6 +152,9 @@ export const AdminContent: React.FC = () => {
     }
 
     setIsPremium(sum.isPremium);
+    setCurrentPdfUrl(sum.pdfUrl);
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleCancelEdit = () => {
@@ -130,6 +162,9 @@ export const AdminContent: React.FC = () => {
     setTitle('');
     setDescription('');
     setIsPremium(false);
+    setSelectedFile(null);
+    setCurrentPdfUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
     // Resetar para o primeiro curso e disciplina disponíveis
     if (sortedSubjects.length > 0) {
@@ -217,7 +252,7 @@ export const AdminContent: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5">
-                Descrição do Conteúdo
+                Resumo do PDF
               </label>
               <textarea
                 required
@@ -339,9 +374,84 @@ export const AdminContent: React.FC = () => {
 
             <div className="space-y-1.5">
               <span className="block text-xs font-semibold text-brand-light uppercase tracking-wider">Arquivo PDF</span>
-              <div className="border-2 border-dashed border-brand-medium/60 rounded-xl p-3 text-center text-xs text-gray-550 bg-brand-dark/20">
-                <FileText className="w-6 h-6 text-brand-light/40 mx-auto mb-1 animate-bounce" />
-                <span className="text-[9px] text-gray-400 font-medium">Arquivo de Simulação Autogerado</span>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="application/pdf"
+                className="hidden"
+                disabled={isUploading}
+              />
+              <div 
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 ${
+                  selectedFile 
+                    ? 'border-green-500/50 bg-green-950/10' 
+                    : 'border-brand-medium/60 bg-brand-dark/20 hover:border-brand-light/50'
+                } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {selectedFile ? (
+                  <div className="space-y-1">
+                    <FileText className="w-8 h-8 text-green-400 mx-auto mb-1 animate-pulse" />
+                    <p className="text-xs font-bold text-white truncate max-w-full px-2">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="text-[9px] text-red-400 hover:text-red-300 font-bold border border-red-500/20 bg-red-950/20 px-2 py-0.5 rounded mt-1.5 transition-colors"
+                    >
+                      Remover arquivo
+                    </button>
+                  </div>
+                ) : currentPdfUrl && currentPdfUrl !== '#' ? (
+                  <div className="space-y-1">
+                    <FileText className="w-8 h-8 text-brand-light mx-auto mb-1" />
+                    <p className="text-xs font-bold text-white">PDF atualmente anexado</p>
+                    <div className="flex justify-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewPdfUrl(currentPdfUrl);
+                        }}
+                        className="text-[9px] text-brand-light hover:text-white font-bold border border-brand-medium/60 bg-brand-dark/40 px-2 py-0.5 rounded transition-colors flex items-center gap-1"
+                      >
+                        <Eye size={10} /> Preview
+                      </button>
+                      <a
+                        href={currentPdfUrl}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[9px] text-gray-300 hover:text-white font-bold border border-brand-medium/60 bg-brand-dark/40 px-2 py-0.5 rounded transition-colors flex items-center gap-1"
+                      >
+                        <Download size={10} /> Baixar
+                      </a>
+                    </div>
+                    <div className="pt-2 border-t border-brand-medium/20 mt-2 text-[9px] text-gray-400">
+                      Arraste ou clique aqui para substituir por outro PDF
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <UploadCloud className="w-8 h-8 text-brand-light/60 mx-auto mb-1 hover:text-brand-light transition-colors" />
+                    <p className="text-xs font-semibold text-white">
+                      Arraste ou clique para selecionar o PDF
+                    </p>
+                    <p className="text-[9px] text-gray-450 mt-0.5">
+                      Somente arquivos .pdf de até 10MB
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -360,10 +470,17 @@ export const AdminContent: React.FC = () => {
 
             <button
               type="submit"
-              disabled={subjects.length === 0}
-              className="w-full bg-brand-light hover:bg-white text-brand-dark py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-brand-light/5"
+              disabled={subjects.length === 0 || isUploading}
+              className="w-full bg-brand-light hover:bg-white text-brand-dark py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-brand-light/5 flex items-center justify-center gap-2"
             >
-              {editingSummaryId ? 'Salvar Alterações' : 'Publicar Resumo'}
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  {editingSummaryId ? 'Salvando Alterações...' : 'Publicando Resumo...'}
+                </>
+              ) : (
+                editingSummaryId ? 'Salvar Alterações' : 'Publicar Resumo'
+              )}
             </button>
           </form>
         </div>
@@ -510,6 +627,28 @@ export const AdminContent: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex gap-2 self-center shrink-0">
+                        {sum.pdfUrl && sum.pdfUrl !== '#' && (
+                          <>
+                            <button
+                              onClick={() => setPreviewPdfUrl(sum.pdfUrl)}
+                              title="Visualizar PDF"
+                              className="p-1.5 bg-brand-medium/20 hover:bg-brand-medium/50 border border-brand-medium/40 text-brand-light hover:text-white rounded-lg transition-all"
+                            >
+                              <Eye size={12} />
+                            </button>
+                            <a
+                              href={sum.pdfUrl}
+                              download
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Baixar PDF"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 bg-brand-medium/20 hover:bg-brand-medium/50 border border-brand-medium/40 text-gray-305 hover:text-white rounded-lg transition-all block"
+                            >
+                              <Download size={12} />
+                            </a>
+                          </>
+                        )}
                         <button
                           onClick={() => handleEditClick(sum)}
                           title="Editar resumo"
@@ -533,6 +672,35 @@ export const AdminContent: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Preview de PDF */}
+      {previewPdfUrl && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-brand-dark border border-brand-medium rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Header do Modal */}
+            <div className="px-5 py-4 border-b border-brand-medium/40 flex items-center justify-between shrink-0 bg-brand-medium/10">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <FileText className="text-brand-light" size={18} />
+                Visualizador de Resumo
+              </h3>
+              <button
+                onClick={() => setPreviewPdfUrl(null)}
+                className="text-gray-400 hover:text-white transition-colors border border-brand-medium/60 bg-brand-dark/45 p-1 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* Corpo do Modal */}
+            <div className="flex-1 bg-brand-dark/50 relative">
+              <iframe
+                src={`${previewPdfUrl}#toolbar=0`}
+                className="w-full h-full border-none"
+                title="Visualizador de PDF"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
