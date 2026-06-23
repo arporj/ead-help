@@ -44,6 +44,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { name: 'Banco de Questões (BDQ)', path: '/student/bdq', icon: FileText },
     { name: 'Consultor de IA', path: '/student/ai-consultant', icon: BrainCircuit },
     { name: 'Ranking Geral', path: '/student/ranking', icon: Award },
+    { name: 'Planos e Valores', path: '/student/plans', icon: CreditCard },
     { name: 'Suporte', path: '/student/support', icon: MessageSquare },
   ];
 
