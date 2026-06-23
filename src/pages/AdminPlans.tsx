@@ -187,45 +187,41 @@ export const AdminPlans: React.FC = () => {
                     </div>
                   </div>
 
-                  {!isBasic && (
-                    <>
-                      <hr className="border-brand-medium/20" />
+                  <hr className="border-brand-medium/20" />
 
-                      {/* Adicionais */}
-                      <div className="space-y-3">
-                        <h4 className="font-bold text-brand-light text-[10px] uppercase tracking-wider">Valores Adicionais</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-gray-400 mb-1 text-[10px]">Matéria Extra (Semestral)</label>
-                            <div className="relative">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
-                              <input
-                                type="text"
-                                value={config.additionalSubjectPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                onChange={(e) => handleInputChange(idx, 'additionalSubjectPrice', formatCurrencyInput(e.target.value))}
-                                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-gray-400 mb-1 text-[10px]">Resumo Avulso (Unid.)</label>
-                            <div className="relative">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
-                              <input
-                                type="text"
-                                value={config.additionalSummaryPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                onChange={(e) => handleInputChange(idx, 'additionalSummaryPrice', formatCurrencyInput(e.target.value))}
-                                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
-                                required
-                              />
-                            </div>
-                          </div>
+                  {/* Adicionais */}
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-brand-light text-[10px] uppercase tracking-wider">Valores Adicionais</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-gray-400 mb-1 text-[10px]">Matéria Extra (Semestral)</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
+                          <input
+                            type="text"
+                            value={config.additionalSubjectPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            onChange={(e) => handleInputChange(idx, 'additionalSubjectPrice', formatCurrencyInput(e.target.value))}
+                            className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+                            required
+                          />
                         </div>
                       </div>
-                    </>
-                  )}
+
+                      <div>
+                        <label className="block text-gray-400 mb-1 text-[10px]">Resumo Avulso (Unid.)</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-450 text-[10px]">R$</span>
+                          <input
+                            type="text"
+                            value={config.additionalSummaryPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            onChange={(e) => handleInputChange(idx, 'additionalSummaryPrice', formatCurrencyInput(e.target.value))}
+                            className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-7 pr-2.5 py-1.5 text-xs text-white focus:border-brand-light focus:outline-none"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
