@@ -1,21 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   BrainCircuit, 
   UserCheck, 
-  FileText, 
   Search, 
   Check, 
   X, 
-  Filter, 
-  Sparkles, 
   Edit3, 
-  BookOpen, 
-  PlusCircle, 
   Save, 
   RefreshCw 
 } from 'lucide-react';
-import type { Subject, Summary } from '../types';
 
 export const AdminStudents: React.FC = () => {
   const { 

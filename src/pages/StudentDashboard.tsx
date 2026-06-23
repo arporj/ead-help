@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download, BookOpen, Search, Check, Sparkles } from 'lucide-react';
-import type { Summary, Subject } from '../types';
+import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download, BookOpen, Search, Check, RefreshCw } from 'lucide-react';
+import type { Summary } from '../types';
 
 export const StudentDashboard: React.FC = () => {
   const { studentProfile, summaries, subjects, courses, saveStudentSubjects, plansConfig } = useAuth();
@@ -20,7 +20,6 @@ export const StudentDashboard: React.FC = () => {
   // Obter limite do plano
   const planConfig = plansConfig.find(p => p.planType === plan);
   const maxSubjects = planConfig?.maxSubjects || 0;
-  const includedSummaries = planConfig?.includedPremiumSummaries || 0;
 
   // Verificar se o estudante ja configurou sua grade
   const hasConfiguredGrade = isBasic || (studentProfile?.studentSubjects && studentProfile.studentSubjects.length > 0);

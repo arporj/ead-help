@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile, SystemUser } from '../types';
+import type { User, StudentProfile, Course, Subject, Summary, Question, SupportMessage, AIKnowledgeFile, SystemUser, PlanConfig } from '../types';
 import { supabase } from '../lib/supabaseClient';
 
 interface AuthContextType {
