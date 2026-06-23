@@ -85,6 +85,7 @@ O objetivo é atuar como um assistente proativo no desenvolvimento do projeto "H
 5.  Garantir conformidade estrita com a LGPD no ranking e a segurança nas rotas.
 6.  **Postura Crítica e Proativa:** Não implementar de forma cega as solicitações se houver um design superior de mercado (Padrão Ouro). Critique a solução proposta se ela trouxer riscos ou se afastar das melhores práticas de sistemas de ensino virtual, controle de acesso a mídias e gamificação segura de nível internacional.
 7.  **Exibição Global de Erros:** Garantir que QUALQUER erro ou falha nas operações (sejam chamadas de banco de dados, upload de arquivos, autenticação ou processamentos assíncronos) seja capturado e exibido de forma clara, amigável e leiga para o usuário final, utilizando o sistema de `globalError` do `AuthContext` e o modal de overlay do `Layout` (ou equivalentes apropriados).
+8.  **Prevenção de Loaders Intrusivos (UX Padrão Ouro):** Evitar ativar estados de carregamento global (`setLoading(true)` ou spinners bloqueantes) ao realizar revalidação de sessões, escuta a focos de aba/Alt+Tab ou atualizações periódicas em segundo plano. O carregamento deve ser silencioso (background) quando o usuário já estiver logado na plataforma, mantendo o sistema responsivo.
 </OBJECTIVE>
 
 <CONTEXT>
