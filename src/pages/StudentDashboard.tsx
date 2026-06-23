@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft } from 'lucide-react';
+import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download } from 'lucide-react';
 import type { Summary } from '../types';
 
 export const StudentDashboard: React.FC = () => {
@@ -32,14 +32,28 @@ export const StudentDashboard: React.FC = () => {
       </div>
 
       {readingSummary ? (
-        /* Simulated PDF Viewer Pane */
+        /* PDF Viewer Pane */
         <div className="bg-brand-medium/10 border border-brand-medium/50 rounded-2xl p-6 space-y-4 shadow-2xl relative">
-          <button 
-            onClick={() => setReadingSummary(null)}
-            className="flex items-center gap-1.5 text-xs text-brand-light hover:text-white transition-colors"
-          >
-            <CornerUpLeft size={16} /> Voltar aos Resumos
-          </button>
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => setReadingSummary(null)}
+              className="flex items-center gap-1.5 text-xs text-brand-light hover:text-white transition-colors"
+            >
+              <CornerUpLeft size={16} /> Voltar aos Resumos
+            </button>
+            
+            {readingSummary.pdfUrl && readingSummary.pdfUrl !== '#' && (
+              <a
+                href={readingSummary.pdfUrl}
+                download
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs bg-brand-light hover:bg-white text-brand-dark px-3 py-1.5 rounded-lg font-bold transition-all"
+              >
+                <Download size={14} /> Baixar PDF
+              </a>
+            )}
+          </div>
           
           <div className="pb-3 border-b border-brand-medium/40">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -49,27 +63,20 @@ export const StudentDashboard: React.FC = () => {
             <p className="text-xs text-gray-400 mt-1">{readingSummary.description}</p>
           </div>
 
-          {/* Simulated document pages content */}
-          <div className="bg-white text-gray-800 rounded-xl p-8 shadow-inner font-serif min-h-[350px] leading-relaxed space-y-4 select-none">
-            <div className="text-center pb-4 border-b border-gray-200">
-              <span className="text-[10px] font-sans font-bold text-brand-medium tracking-widest block uppercase">Documento Oficial de Estudos Help EAD</span>
-              <h1 className="text-xl font-bold text-gray-900 mt-1">{readingSummary.title}</h1>
-            </div>
-            
-            <p className="text-sm">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam nec arcu sodales, pretium leo non, pretium ante. Cras non purus sed neque vestibulum condimentum. Proin lacinia accumsan sem et bibendum. Praesent eget purus nisl.
-            </p>
-            <h3 className="text-base font-bold text-gray-950 pt-2">1. Introdução ao Conceito Fundamental</h3>
-            <p className="text-sm">
-              Nam tincidunt eros quis risus tristique, sed semper lorem volutpat. Ut sit amet rhoncus nibh, vel dictum sem. Morbi sodales imperdiet libero sed feugiat. Sed vitae congue velit. Praesent in tincidunt eros.
-            </p>
-            <h3 className="text-base font-bold text-gray-950 pt-2">2. Aplicação Prática e Exemplos Resumidos</h3>
-            <p className="text-sm">
-              Mauris scelerisque dolor eu neque sollicitudin dictum. Quisque non iaculis ante. Ut accumsan ante augue, vitae condimentum turpis suscipit scelerisque. Class aptent taciti sociosqu ad litora torquent per conubia nostra.
-            </p>
-            <div className="text-center pt-8 border-t border-gray-100 text-[10px] text-gray-400 font-sans">
-              [ FIM DO RESUMO &bull; ESTUDE COM OS SIMULADOS DO PORTAL ]
-            </div>
+          {/* Document pages content (Real PDF Viewer) */}
+          <div className="bg-brand-dark/50 border border-brand-medium/30 rounded-xl overflow-hidden shadow-inner h-[550px] relative">
+            {readingSummary.pdfUrl && readingSummary.pdfUrl !== '#' ? (
+              <iframe
+                src={`${readingSummary.pdfUrl}#toolbar=0`}
+                className="w-full h-full border-none"
+                title={readingSummary.title}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 text-xs">
+                <FileText size={48} className="text-brand-light/40 animate-pulse" />
+                <p>Nenhum arquivo PDF associado a este resumo.</p>
+              </div>
+            )}
           </div>
         </div>
       ) : (
