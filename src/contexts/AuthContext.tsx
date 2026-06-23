@@ -69,6 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const studentProfile = impersonatedStudentProfile || realStudentProfile;
   const isImpersonating = impersonatedUser !== null;
 
+  const realUserRef = React.useRef<User | null>(null);
+
+  useEffect(() => {
+    realUserRef.current = realUser;
+  }, [realUser]);
+
   const [plansConfig, setPlansConfig] = useState<PlanConfig[]>([]);
   const [students, setStudents] = useState<{ user: User; profile: StudentProfile }[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -306,7 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    if (!realUser) {
+    if (!realUserRef.current) {
       setLoading(true);
     }
     try {
