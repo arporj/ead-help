@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { BrainCircuit, Send, Sparkles, User, ArrowRight } from 'lucide-react';
 
 interface ChatMessage {
@@ -11,6 +12,7 @@ interface ChatMessage {
 
 export const StudentAIConsultant: React.FC = () => {
   const { studentProfile } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -106,10 +108,10 @@ export const StudentAIConsultant: React.FC = () => {
           </div>
 
           <button
-            onClick={() => alert('Para adquirir o acesso avulso à IA neste MVP, mude seu perfil no painel flutuante para Aluno Premium ou abra o painel de administrador e libere a IA para João/Maria!')}
-            className="bg-brand-light hover:bg-white text-brand-dark px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 inline-flex items-center gap-2"
+            onClick={() => navigate('/student/plans')}
+            className="bg-brand-light hover:bg-white text-brand-dark px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 inline-flex items-center gap-2 cursor-pointer"
           >
-            Adquirir Módulo de IA <ArrowRight size={14} />
+            Ver Planos e Valores <ArrowRight size={14} />
           </button>
         </div>
       </div>
