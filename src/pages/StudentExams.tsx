@@ -9,6 +9,21 @@ export const StudentExams: React.FC = () => {
   // Listagem de disciplinas ordenada alfabeticamente para a interface
   const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
+  const studentSubjectIds = studentProfile?.studentSubjects?.map(ss => ss.subjectId) || [];
+  
+  // Filtrar disciplinas de acordo com o plano do aluno
+  const availableSubjects = sortedSubjects.filter(sub => {
+    if (studentProfile?.plan === 'basic' || !studentProfile) return true; // Gratuito ve todas
+    return studentSubjectIds.includes(sub.id);
+  });
+
+  const todayStr = new Date().toLocaleDateString('pt-BR');
+  const hasDoneExamToday = (studentProfile?.plan === 'basic' || !studentProfile) && (studentProfile?.examCycles || []).some(cycle => {
+    if (!cycle.completedAt) return false;
+    const cycleDateStr = new Date(cycle.completedAt).toLocaleDateString('pt-BR');
+    return cycleDateStr === todayStr;
+  });
+
   // States
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -41,6 +56,11 @@ export const StudentExams: React.FC = () => {
     let filtered = questions.filter(q => {
       // Check if student plan allows this question
       if (q.isProOrPremium && !isProOrPremium) return false;
+
+      // Se for Pro/Premium, filtrar apenas questoes das disciplinas contratadas
+      if (isProOrPremium && !studentSubjectIds.includes(q.subjectId)) {
+        return false;
+      }
       
       // Filter by subject if specified
       if (selectedSubjectId !== 'all') {
@@ -458,8 +478,8 @@ export const StudentExams: React.FC = () => {
                     {(() => {
                       // Filtrar disciplinas pelo curso selecionado (se não for 'all')
                       const courseSubjects = selectedCourseId === 'all' 
-                        ? sortedSubjects 
-                        : sortedSubjects.filter(s => s.courseId === selectedCourseId);
+                        ? availableSubjects 
+                        : availableSubjects.filter(s => s.courseId === selectedCourseId);
                       
                       // Filtrar pelo texto pesquisado
                       const searchedSubjects = courseSubjects.filter(sub => 
@@ -511,16 +531,22 @@ export const StudentExams: React.FC = () => {
             </ul>
           </div>
 
-          {/* Premium details indicator */}
           {!isProOrPremium && (
-            <div className="bg-yellow-600/10 border border-yellow-500/20 text-yellow-300 p-3 rounded-xl text-[10px] leading-relaxed">
+            <div className="bg-yellow-600/10 border border-yellow-500/20 text-yellow-350 p-3 rounded-xl text-[10px] leading-relaxed">
               ⚠️ Como **Aluno Básico**, você resolverá questões do simulado aberto. Upgrade para o plano Pro ou Premium desbloqueia questões reais extraídas de exames e provas acadêmicas anteriores.
+            </div>
+          )}
+
+          {hasDoneExamToday && (
+            <div className="bg-red-950/20 border border-red-500/20 text-red-300 p-4 rounded-xl text-xs leading-relaxed">
+              ⚠️ **Limite diário atingido:** Você já realizou seu simulado gratuito de hoje. Faça o upgrade para o plano **Start** ou **Aprovação** para realizar simulados ilimitados, escolher disciplinas de foco, ter resumos premium e muito mais!
             </div>
           )}
 
           <button
             onClick={handleStartExam}
-            className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 flex items-center justify-center gap-2"
+            disabled={!!hasDoneExamToday}
+            className="w-full bg-brand-light hover:bg-white text-brand-dark py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Play size={14} className="fill-brand-dark" /> Iniciar Ciclo de Simulados (10 Qs)
           </button>
