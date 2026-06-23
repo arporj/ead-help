@@ -284,7 +284,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   : 'bg-brand-medium/20 border border-brand-medium/40'
               }`}
             >
-              <span>👤 Aluno Básico (João)</span>
+              <span>👤 Aluno Gratuito (João)</span>
               <span className="text-[10px] bg-brand-dark px-1.5 py-0.5 rounded text-gray-450">Gratuito</span>
             </button>
             
@@ -296,8 +296,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   : 'bg-brand-medium/20 border border-brand-medium/40'
               }`}
             >
-              <span>👤 Aluno Pro (Maria)</span>
-              <span className="text-[10px] bg-brand-medium px-1.5 py-0.5 rounded text-brand-light font-bold">Pro</span>
+              <span>👤 Aluno Start (Maria)</span>
+              <span className="text-[10px] bg-brand-medium px-1.5 py-0.5 rounded text-brand-light font-bold">Start</span>
             </button>
             
             <button 
@@ -308,8 +308,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   : 'bg-brand-medium/20 border border-brand-medium/40'
               }`}
             >
-              <span>👤 Aluno Premium (Carlos)</span>
-              <span className="text-[10px] bg-yellow-600/30 text-yellow-350 border border-yellow-500/20 px-1.5 py-0.5 rounded font-bold">Premium</span>
+              <span>👤 Aluno Aprovação (Carlos)</span>
+              <span className="text-[10px] bg-yellow-600/30 text-yellow-350 border border-yellow-500/20 px-1.5 py-0.5 rounded font-bold">Aprovação</span>
             </button>
             
             <button 
