@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Shield, Zap, Award, HelpCircle, MessageSquare } from 'lucide-react';
+import { CheckCircle, Zap, HelpCircle, MessageSquare } from 'lucide-react';
 
 export const StudentPlans: React.FC = () => {
   const { studentProfile, plansConfig } = useAuth();
