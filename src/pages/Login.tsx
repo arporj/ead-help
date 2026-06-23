@@ -5,7 +5,7 @@ import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, C
 import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
-  const { loginAs, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -144,18 +144,6 @@ export const Login: React.FC = () => {
         setError(friendlyMessage);
       }
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (role: 'admin' | 'basic' | 'pro' | 'premium') => {
-    setLoading(true);
-    setError('');
-    setSuccessMessage('');
-    try {
-      await loginAs(role);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao realizar login rápido.');
       setLoading(false);
     }
   };
@@ -382,61 +370,6 @@ export const Login: React.FC = () => {
             </button>
           </form>
         )}
-
-        <div className="my-6 flex items-center justify-between">
-          <span className="w-full border-b border-brand-medium/40"></span>
-          <span className="text-[10px] text-brand-light font-bold px-3 uppercase shrink-0">Simulador de Acesso Rápido</span>
-          <span className="w-full border-b border-brand-medium/40"></span>
-        </div>
-
-        <div className="space-y-2">
-          <button 
-            onClick={() => handleQuickLogin('basic')}
-            disabled={loading}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="flex items-center gap-2">
-              <User size={14} className="text-brand-light" />
-              Aluno Básico (João Silva)
-            </span>
-            <span className="bg-brand-dark px-2 py-0.5 rounded text-[9px] text-gray-400">Plano Grátis</span>
-          </button>
-
-          <button 
-            onClick={() => handleQuickLogin('pro')}
-            disabled={loading}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="flex items-center gap-2">
-              <User size={14} className="text-brand-light animate-pulse" />
-              Aluno Pro (Maria Santos)
-            </span>
-            <span className="bg-brand-medium/30 border border-brand-light/35 px-2 py-0.5 rounded text-[9px] text-brand-light font-bold">Plano Pro</span>
-          </button>
-
-          <button 
-            onClick={() => handleQuickLogin('premium')}
-            disabled={loading}
-            className="w-full bg-brand-medium/20 hover:bg-brand-medium/45 text-white p-2.5 rounded-xl border border-brand-medium/40 text-xs font-medium flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="flex items-center gap-2">
-              <User size={14} className="text-brand-light" />
-              Aluno Premium (Carlos Oliveira)
-            </span>
-            <span className="bg-yellow-600/25 border border-yellow-500/20 px-2 py-0.5 rounded text-[9px] text-yellow-300 font-bold">Plano Premium</span>
-          </button>
-
-          <button 
-            onClick={() => handleQuickLogin('admin')}
-            disabled={loading}
-            className="w-full bg-brand-medium/30 hover:bg-brand-medium text-brand-light p-2.5 rounded-xl border border-brand-light/25 text-xs font-bold flex items-center justify-between transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="flex items-center gap-2">
-              ⚙️ Painel de Administração
-            </span>
-            <span className="bg-brand-dark px-2 py-0.5 rounded text-[9px] border border-brand-light/10 text-white font-medium">Acesso Total</span>
-          </button>
-        </div>
       </div>
     </div>
   );
