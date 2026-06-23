@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Printer, Lock } from 'lucide-react';
 
 export const StudentBDQ: React.FC = () => {
   const { studentProfile, questions, subjects, courses } = useAuth();
+  const navigate = useNavigate();
 
   // Listagem de disciplinas ordenada alfabeticamente para a interface
   const studentSubjectIds = studentProfile?.studentSubjects?.map(ss => ss.subjectId) || [];
@@ -87,8 +89,13 @@ export const StudentBDQ: React.FC = () => {
             Uma listagem limpa de questões contendo apenas a pergunta e a resposta gabaritada. Ideal para imprimir, ler fora da tela e memorizar com estudos focados.
           </div>
 
-          <div className="pt-2 text-xs text-brand-light font-bold">
-            Upgrade para o plano Pro a partir de R$ 29/mês para liberar o BDQ.
+          <div className="pt-2">
+            <button
+              onClick={() => navigate('/student/plans')}
+              className="bg-brand-light hover:bg-white text-brand-dark px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              Ver Planos e Valores
+            </button>
           </div>
         </div>
       </div>
