@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
-  const { user, loginAs } = useAuth();
+  const { user, loginAs, plansConfig } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -32,6 +32,26 @@ export const LandingPage: React.FC = () => {
     } catch (err: any) {
       alert(err.message || 'Erro ao acessar o plano de simulação.');
     }
+  };
+
+  const basicPlan = plansConfig?.find(p => p.planType === 'basic') || {
+    name: 'Gratuito',
+    priceMonthly: 0,
+    priceQuarterly: 0
+  };
+  const proPlan = plansConfig?.find(p => p.planType === 'pro') || {
+    name: 'Start',
+    priceMonthly: 39.90,
+    priceQuarterly: 99.90,
+    maxSubjects: 3,
+    includedPremiumSummaries: 1
+  };
+  const premiumPlan = plansConfig?.find(p => p.planType === 'premium') || {
+    name: 'Aprovação',
+    priceMonthly: 69.90,
+    priceQuarterly: 179.90,
+    maxSubjects: 5,
+    includedPremiumSummaries: 2
   };
 
   return (
@@ -149,28 +169,28 @@ export const LandingPage: React.FC = () => {
           {/* Plano Básico */}
           <div className="bg-brand-medium/10 border border-brand-medium/40 p-8 rounded-2xl flex flex-col justify-between hover:scale-[1.02] transition-all duration-300">
             <div>
-              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">Básico</span>
+              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">{basicPlan.name}</span>
               <div className="flex items-baseline text-white">
                 <span className="text-4xl font-extrabold">Grátis</span>
               </div>
-              <p className="mt-4 text-xs text-gray-400 leading-relaxed">Perfeito para conhecer a dinâmica da plataforma e começar a treinar.</p>
+              <p className="mt-4 text-xs text-gray-400 leading-relaxed">Experimente a plataforma antes de assinar.</p>
               
               <ul className="mt-6 space-y-3">
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Acesso a Simulados Gerais</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>1 Quiz de Simulado por dia</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs text-gray-400 line-through">
-                  <CheckCircle className="w-4 h-4 shrink-0 text-brand-medium" />
-                  <span>Acesso a Simulados de Provas Oficiais</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Ranking de desempenho</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs text-gray-400 line-through">
-                  <CheckCircle className="w-4 h-4 shrink-0 text-brand-medium" />
-                  <span>Download do BDQ de Simulados</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Estatísticas básicas</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs text-gray-400 line-through">
-                  <CheckCircle className="w-4 h-4 shrink-0 text-brand-medium" />
-                  <span>Consultor Jurídico de IA</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Histórico dos simulados realizados</span>
                 </li>
               </ul>
             </div>
@@ -186,72 +206,94 @@ export const LandingPage: React.FC = () => {
           {/* Plano Pro */}
           <div className="bg-brand-medium/25 border-2 border-brand-light/50 p-8 rounded-2xl flex flex-col justify-between relative hover:scale-[1.02] transition-all duration-300 shadow-xl shadow-brand-light/5">
             <div className="absolute top-0 right-6 -translate-y-1/2 bg-brand-light text-brand-dark px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-              Recomendado
+              Popular
             </div>
             <div>
-              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">Pro</span>
-              <div className="flex items-baseline text-white">
-                <span className="text-2xl font-semibold">R$</span>
-                <span className="text-4xl font-extrabold">29</span>
-                <span className="text-base text-gray-400">/mês</span>
+              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">{proPlan.name}</span>
+              <div className="flex flex-col text-white">
+                <div>
+                  <span className="text-2xl font-semibold">R$</span>
+                  <span className="text-4xl font-extrabold">{proPlan.priceMonthly?.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-xs text-gray-400">/mês</span>
+                </div>
+                <div className="text-[10px] text-brand-light font-bold mt-1">
+                  ou R$ {proPlan.priceQuarterly?.toFixed(2).replace('.', ',')}/trimestre
+                </div>
               </div>
-              <p className="mt-4 text-xs text-gray-300 leading-relaxed">Treinamento avançado com simulados oficiais e download de banco de questões.</p>
+              <p className="mt-4 text-xs text-gray-300 leading-relaxed">Ideal para alunos que desejam reforçar disciplinas específicas.</p>
               
-              <ul className="mt-6 space-y-3">
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Acesso a Simulados Gerais</span>
+              <ul className="mt-6 space-y-2.5">
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Quiz de Simulados ilimitados</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Acesso a Simulados de Provas Oficiais</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Quiz de AV & BDQs das matérias contratadas</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Download do BDQ de Simulados</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Histórico completo & Estatísticas detalhadas</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs text-gray-450 line-through">
-                  <CheckCircle className="w-4 h-4 shrink-0 text-brand-medium" />
-                  <span>Consultor Jurídico de IA</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{proPlan.includedPremiumSummaries} Resumo Premium incluso</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs font-bold text-brand-light border-t border-brand-medium/35 pt-2 mt-2">
+                  <span>Limite: Até {proPlan.maxSubjects} disciplinas</span>
+                </li>
+                <li className="text-[9px] text-gray-400 leading-relaxed">
+                  * Disciplinas escolhidas na assinatura. Sem trocas durante a vigência.
                 </li>
               </ul>
             </div>
             
             <button
               onClick={() => handleQuickAccess('pro')}
-              className="mt-8 w-full bg-brand-light hover:bg-white text-brand-dark font-bold py-2.5 rounded-xl shadow-md transition-all animate-pulse"
+              className="mt-8 w-full bg-brand-light hover:bg-white text-brand-dark font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Assinar Plano Pro
+              Assinar Plano Start
             </button>
           </div>
 
           {/* Plano Premium */}
           <div className="bg-brand-medium/10 border border-brand-medium/40 p-8 rounded-2xl flex flex-col justify-between hover:scale-[1.02] transition-all duration-300">
             <div>
-              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">Premium</span>
-              <div className="flex items-baseline text-white">
-                <span className="text-2xl font-semibold">R$</span>
-                <span className="text-4xl font-extrabold">49</span>
-                <span className="text-base text-gray-400">/mês</span>
+              <span className="text-sm font-bold text-brand-light uppercase tracking-widest block mb-2">{premiumPlan.name}</span>
+              <div className="flex flex-col text-white">
+                <div>
+                  <span className="text-2xl font-semibold">R$</span>
+                  <span className="text-4xl font-extrabold">{premiumPlan.priceMonthly?.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-xs text-gray-400">/mês</span>
+                </div>
+                <div className="text-[10px] text-brand-light font-bold mt-1">
+                  ou R$ {premiumPlan.priceQuarterly?.toFixed(2).replace('.', ',')}/trimestre
+                </div>
               </div>
-              <p className="mt-4 text-xs text-gray-400 leading-relaxed">Liberação de toda a base de simulados, BDQ completo de provas e chat de IA integrado.</p>
+              <p className="mt-4 text-xs text-gray-400 leading-relaxed">Plano recomendado para alunos que buscam maior cobertura durante o semestre.</p>
               
-              <ul className="mt-6 space-y-3">
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Todos os Simulados e Provas</span>
+              <ul className="mt-6 space-y-2.5">
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Quiz de Simulados ilimitados</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>BDQ Completo de Simulados e Provas</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Quiz de AV & BDQs das matérias contratadas</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Consultor Jurídico de IA Incluso</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>Histórico completo & Estatísticas detalhadas</span>
                 </li>
-                <li className="flex items-center gap-2 text-xs">
-                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0" />
-                  <span>Visualização de Resumos Premium</span>
+                <li className="flex items-start gap-2 text-xs">
+                  <CheckCircle className="text-brand-light w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{premiumPlan.includedPremiumSummaries} Resumos Premium inclusos</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs font-bold text-brand-light border-t border-brand-medium/35 pt-2 mt-2">
+                  <span>Limite: Até {premiumPlan.maxSubjects} disciplinas</span>
+                </li>
+                <li className="text-[9px] text-gray-400 leading-relaxed">
+                  * Disciplinas escolhidas na assinatura. Sem trocas durante a vigência.
                 </li>
               </ul>
             </div>
@@ -260,7 +302,7 @@ export const LandingPage: React.FC = () => {
               onClick={() => handleQuickAccess('premium')}
               className="mt-8 w-full bg-brand-medium/30 hover:bg-brand-medium/60 text-white font-semibold py-2.5 rounded-xl border border-brand-medium transition-all"
             >
-              Obter Premium
+              Obter Plano Aprovação
             </button>
           </div>
         </div>
