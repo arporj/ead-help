@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import type { Question } from '../types';
 import { HelpCircle, Play, AlertTriangle, CheckCircle, XCircle, ArrowRight, Award } from 'lucide-react';
 
 export const StudentExams: React.FC = () => {
   const { studentProfile, questions, subjects, courses, addExamCycle } = useAuth();
+  const navigate = useNavigate();
 
   // Listagem de disciplinas ordenada alfabeticamente para a interface
   const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -538,8 +540,18 @@ export const StudentExams: React.FC = () => {
           )}
 
           {hasDoneExamToday && (
-            <div className="bg-red-950/20 border border-red-500/20 text-red-300 p-4 rounded-xl text-xs leading-relaxed">
-              ⚠️ **Limite diário atingido:** Você já realizou seu simulado gratuito de hoje. Faça o upgrade para o plano **Start** ou **Aprovação** para realizar simulados ilimitados, escolher disciplinas de foco, ter resumos premium e muito mais!
+            <div className="bg-red-950/20 border border-red-500/20 text-red-300 p-4 rounded-xl text-xs leading-relaxed space-y-3">
+              <p>
+                ⚠️ **Limite diário atingido:** Você já realizou seu simulado gratuito de hoje. Faça o upgrade para o plano **Start** ou **Aprovação** para realizar simulados ilimitados, escolher disciplinas de foco, ter resumos premium e muito mais!
+              </p>
+              <div className="pt-1">
+                <button
+                  onClick={() => navigate('/student/plans')}
+                  className="bg-brand-light hover:bg-white text-brand-dark px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-light/5 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  Ver Planos e Valores
+                </button>
+              </div>
             </div>
           )}
 
