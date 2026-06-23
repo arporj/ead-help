@@ -6,7 +6,12 @@ export const StudentBDQ: React.FC = () => {
   const { studentProfile, questions, subjects, courses } = useAuth();
 
   // Listagem de disciplinas ordenada alfabeticamente para a interface
-  const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  const studentSubjectIds = studentProfile?.studentSubjects?.map(ss => ss.subjectId) || [];
+  
+  // Listagem de disciplinas filtrada pela grade do aluno
+  const sortedSubjects = [...subjects]
+    .filter(sub => studentSubjectIds.includes(sub.id))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   // States
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -35,6 +40,9 @@ export const StudentBDQ: React.FC = () => {
     
     // Pro sees only simulado. Premium sees everything
     if (plan === 'pro' && q.type !== 'simulado') return false;
+
+    // Filtrar apenas questoes de disciplinas contratadas
+    if (!studentSubjectIds.includes(q.subjectId)) return false;
 
     // Filter by subject if specified
     if (selectedSubjectId !== 'all') {
