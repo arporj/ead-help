@@ -162,7 +162,9 @@ export const StudentPlans: React.FC = () => {
           </div>
           
           <button
-            onClick={() => navigate('/student/support')}
+            onClick={() => navigate('/student/support', {
+              state: { message: `Olá! Gostaria de realizar a assinatura do Plano Start. Por favor, me envie as instruções de pagamento.` }
+            })}
             className={`mt-8 w-full font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
               currentPlan === 'pro'
                 ? 'bg-brand-medium/30 border border-brand-medium text-white hover:bg-brand-medium/55'
@@ -228,7 +230,9 @@ export const StudentPlans: React.FC = () => {
           </div>
           
           <button
-            onClick={() => navigate('/student/support')}
+            onClick={() => navigate('/student/support', {
+              state: { message: `Olá! Gostaria de realizar a assinatura do Plano Aprovação. Por favor, me envie as instruções de pagamento.` }
+            })}
             className={`mt-8 w-full font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
               currentPlan === 'premium'
                 ? 'bg-brand-medium/30 border border-brand-medium text-white hover:bg-brand-medium/55'
