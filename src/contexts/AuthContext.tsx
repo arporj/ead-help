@@ -50,6 +50,10 @@ interface AuthContextType {
   isImpersonating: boolean;
   impersonatorEmail: string | null;
   stopImpersonating: () => void;
+  plansConfig: PlanConfig[];
+  updatePlansConfig: (configs: PlanConfig[]) => Promise<void>;
+  saveStudentSubjects: (subjectIds: string[]) => Promise<void>;
+  saveStudentSubjectsByAdmin: (studentId: string, subjectIds: string[], additionalSubjectIds: string[]) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const studentProfile = impersonatedStudentProfile || realStudentProfile;
   const isImpersonating = impersonatedUser !== null;
 
+  const [plansConfig, setPlansConfig] = useState<PlanConfig[]>([]);
   const [students, setStudents] = useState<{ user: User; profile: StudentProfile }[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -95,6 +100,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Carrega todos os dados do Supabase
   const loadData = async (userId: string, userRole: 'admin' | 'student') => {
     try {
+      // Configuração de Planos
+      const { data: plansData } = await supabase.from('plans_config').select('*');
+      if (plansData) {
+        setPlansConfig(plansData.map(p => ({
+          id: p.id,
+          planType: p.plan_type as 'basic' | 'pro' | 'premium',
+          name: p.name,
+          priceMonthly: Number(p.price_monthly),
+          priceQuarterly: Number(p.price_quarterly),
+          maxSubjects: p.max_subjects,
+          includedPremiumSummaries: p.included_premium_summaries,
+          additionalSubjectPrice: Number(p.additional_subject_price),
+          additionalSummaryPrice: Number(p.additional_summary_price),
+        })));
+      }
+
       // Cursos e Disciplinas
       const { data: coursesData } = await supabase.from('courses').select('*');
       const { data: subjectsData } = await supabase.from('subjects').select('*');
@@ -220,6 +241,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('ai_consultant_access')
             .select('*');
 
+          const { data: allStudentSubjects } = await supabase
+            .from('student_subjects')
+            .select('*');
+
           setStudents(allStudents.map(s => {
             const studentSessions = (allSessions || []).filter(se => se.student_id === s.id);
             const examCycles = studentSessions.map(se => ({
@@ -232,7 +257,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }));
             const rankingPoints = examCycles.reduce((acc, curr) => acc + (curr.correctAnswers * 10), 0);
             const summaryAccess = (allAccess || []).filter(a => a.student_id === s.id).map(a => a.summary_id);
+            const summaryAccessDetails = (allAccess || []).filter(a => a.student_id === s.id).map(a => ({
+              summaryId: a.summary_id,
+              accessType: (a.access_type || 'admin') as 'admin' | 'benefit' | 'purchased'
+            }));
             const aiConsultantAccess = (allAiAccess || []).some(a => a.student_id === s.id);
+            const studentSubjects = (allStudentSubjects || []).filter(ss => ss.student_id === s.id).map(ss => ({
+              id: ss.id,
+              studentId: ss.student_id,
+              subjectId: ss.subject_id,
+              isAdditional: ss.is_additional,
+              createdAt: ss.created_at
+            }));
 
             return {
               user: {
@@ -248,8 +284,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 lgpdRankingConsent: s.lgpd_ranking_consent,
                 rankingPoints,
                 summaryAccess,
+                summaryAccessDetails,
                 aiConsultantAccess,
-                examCycles
+                examCycles,
+                studentSubjects
               }
             };
           }));
@@ -356,9 +394,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           const { data: access } = await supabase
             .from('summary_access')
-            .select('summary_id')
+            .select('*')
             .eq('student_id', suUser.id);
           const summaryAccess = (access || []).map(a => a.summary_id);
+          const summaryAccessDetails = (access || []).map(a => ({
+            summaryId: a.summary_id,
+            accessType: (a.access_type || 'admin') as 'admin' | 'benefit' | 'purchased'
+          }));
 
           const { data: aiAccess } = await supabase
             .from('ai_consultant_access')
@@ -367,6 +409,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .maybeSingle();
           const aiConsultantAccess = !!aiAccess;
 
+          const { data: subjs } = await supabase
+            .from('student_subjects')
+            .select('*')
+            .eq('student_id', suUser.id);
+          const studentSubjects = (subjs || []).map(ss => ({
+            id: ss.id,
+            studentId: ss.student_id,
+            subjectId: ss.subject_id,
+            isAdditional: ss.is_additional,
+            createdAt: ss.created_at
+          }));
+
           setRealStudentProfile({
             id: suUser.id,
             userId: suUser.id,
@@ -374,8 +428,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lgpdRankingConsent: student.lgpd_ranking_consent,
             rankingPoints,
             summaryAccess,
+            summaryAccessDetails,
             aiConsultantAccess,
-            examCycles
+            examCycles,
+            studentSubjects
           });
         }
       } else {
@@ -731,6 +787,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
     if (user) await loadData(user.id, user.role);
+  };
+
+  const updatePlansConfig = async (configs: PlanConfig[]) => {
+    try {
+      for (const config of configs) {
+        const { error } = await supabase
+          .from('plans_config')
+          .update({
+            name: config.name,
+            price_monthly: config.priceMonthly,
+            price_quarterly: config.priceQuarterly,
+            max_subjects: config.maxSubjects,
+            included_premium_summaries: config.includedPremiumSummaries,
+            additional_subject_price: config.additionalSubjectPrice,
+            additional_summary_price: config.additionalSummaryPrice,
+            updated_at: new Date().toISOString()
+          })
+          .eq('plan_type', config.planType);
+        
+        if (error) throw error;
+      }
+      if (user) await loadData(user.id, user.role);
+    } catch (error) {
+      handleError('Atualizar Preços dos Planos', error);
+      throw error;
+    }
+  };
+
+  const saveStudentSubjects = async (subjectIds: string[]) => {
+    if (!user) return;
+    try {
+      const { error: deleteErr } = await supabase
+        .from('student_subjects')
+        .delete()
+        .eq('student_id', user.id)
+        .eq('is_additional', false);
+      
+      if (deleteErr) throw deleteErr;
+
+      if (subjectIds.length > 0) {
+        const inserts = subjectIds.map(sid => ({
+          student_id: user.id,
+          subject_id: sid,
+          is_additional: false
+        }));
+        
+        const { error: insertErr } = await supabase
+          .from('student_subjects')
+          .insert(inserts);
+        
+        if (insertErr) throw insertErr;
+      }
+      
+      await loadData(user.id, user.role);
+    } catch (error) {
+      handleError('Salvar Grade de Disciplinas', error);
+      throw error;
+    }
+  };
+
+  const saveStudentSubjectsByAdmin = async (studentId: string, subjectIds: string[], additionalSubjectIds: string[]) => {
+    try {
+      const { error: deleteErr } = await supabase
+        .from('student_subjects')
+        .delete()
+        .eq('student_id', studentId);
+      
+      if (deleteErr) throw deleteErr;
+
+      const inserts: any[] = [];
+      
+      subjectIds.forEach(sid => {
+        inserts.push({
+          student_id: studentId,
+          subject_id: sid,
+          is_additional: false
+        });
+      });
+
+      additionalSubjectIds.forEach(sid => {
+        inserts.push({
+          student_id: studentId,
+          subject_id: sid,
+          is_additional: true
+        });
+      });
+
+      if (inserts.length > 0) {
+        const { error: insertErr } = await supabase
+          .from('student_subjects')
+          .insert(inserts);
+        
+        if (insertErr) throw insertErr;
+      }
+
+      if (user) await loadData(user.id, user.role);
+    } catch (error) {
+      handleError('Salvar Grade de Disciplinas (Admin)', error);
+      throw error;
+    }
   };
 
   const toggleSummaryAccess = async (studentId: string, summaryId: string) => {
@@ -1357,7 +1513,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         transferSupraStatus,
         isImpersonating,
         impersonatorEmail,
-        stopImpersonating
+        stopImpersonating,
+        plansConfig,
+        updatePlansConfig,
+        saveStudentSubjects,
+        saveStudentSubjectsByAdmin
       }}
     >
       {children}
