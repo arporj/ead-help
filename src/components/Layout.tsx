@@ -17,7 +17,8 @@ import {
   BrainCircuit,
   UserCheck,
   Shield,
-  GraduationCap
+  GraduationCap,
+  CreditCard
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,6 +50,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const adminNav = [
     { name: 'Visão Geral', path: '/admin', icon: LayoutDashboard },
     { name: 'Gerenciar Alunos', path: '/admin/students', icon: Users },
+    { name: 'Planos e Preços', path: '/admin/plans', icon: CreditCard },
     { name: 'Cursos & Disciplinas', path: '/admin/academic', icon: GraduationCap },
     { name: 'Gerenciar Resumos', path: '/admin/content', icon: BookMarked },
     { name: 'Banco de Questões', path: '/admin/questions', icon: FileText },
