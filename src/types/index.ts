@@ -75,6 +75,8 @@ export interface AIKnowledgeFile {
   fileName: string;
   fileSize: string;
   uploadedAt: string;
+  discipline?: 'civil' | 'penal' | 'trabalhista' | null;
+  category?: 'template_estrutural' | 'checklist' | 'caso_pratico' | null;
 }
 
 export interface SystemUser {
