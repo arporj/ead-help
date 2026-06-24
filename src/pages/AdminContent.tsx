@@ -335,7 +335,8 @@ export const AdminContent: React.FC = () => {
                         setFormSubjectSearchText('');
                       }}
                     />
-                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text                      {(() => {
+                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
+                      {(() => {
                         const courseSubjects = sortedSubjects.filter(s => s.courseId === formCourseId);
                         const searchedSubjects = courseSubjects.filter(sub => 
                           sub.name.toLowerCase().includes(formSubjectSearchText.toLowerCase())
@@ -386,7 +387,7 @@ export const AdminContent: React.FC = () => {
                               ))}
                           </div>
                         ));
-                      })()}        })()}
+                      })()}
                     </div>
                   </>
                 )}
