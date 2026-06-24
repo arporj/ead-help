@@ -37,7 +37,7 @@ interface AuthContextType {
   deleteSummariesBySubject: (subjectId: string) => Promise<void>;
   deleteQuestionsBySubject: (subjectId: string) => Promise<void>;
   clearCourseContent: (courseId: string) => Promise<void>;
-  addAiFile: (fileName: string, fileSize: string) => Promise<void>;
+  addAiFile: (fileName: string, discipline: string | null, category: string | null, file?: File) => Promise<void>;
   removeAiFile: (id: string) => Promise<void>;
   sendSupportMessage: (message: string) => Promise<void>;
   respondSupportMessage: (id: string, response: string) => Promise<void>;
@@ -170,7 +170,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: f.id,
           fileName: f.name,
           fileSize: 'N/A',
-          uploadedAt: f.created_at
+          uploadedAt: f.created_at,
+          discipline: f.discipline as any,
+          category: f.category as any
         })));
       }
 
@@ -1320,29 +1322,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await loadData(user.id, user.role);
   };
 
-  const addAiFile = async (fileName: string, _fileSize: string) => {
-    const { error } = await supabase
+  const addAiFile = async (fileName: string, discipline: string | null, category: string | null, file?: File) => {
+    let fileUrl = '#';
+
+    if (file) {
+      const fileExt = file.name.split('.').pop();
+      const randomName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `base/${randomName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('ai-knowledge')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        handleError('Upload do PDF de Conhecimento', uploadError);
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('ai-knowledge')
+        .getPublicUrl(filePath);
+
+      fileUrl = publicUrlData.publicUrl;
+    }
+
+    const { data: insertData, error } = await supabase
       .from('ai_knowledge_files')
       .insert({
         name: fileName,
-        url: '#'
-      });
+        url: fileUrl,
+        discipline: discipline || null,
+        category: category || null
+      })
+      .select()
+      .maybeSingle();
+
     if (error) {
       handleError('Adicionar Arquivo à IA', error);
       throw error;
     }
+
+    // Acionar a Edge Function de Ingestão
+    if (file && insertData) {
+      try {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL || ''}/functions/v1/ingest-knowledge`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
+          },
+          body: JSON.stringify({ fileId: insertData.id })
+        }).catch(err => console.error('Erro ao acionar ingestão da IA:', err));
+      } catch (e) {
+        console.error('Falha ao acionar Edge Function:', e);
+      }
+    }
+
     if (user) await loadData(user.id, user.role);
   };
 
   const removeAiFile = async (id: string) => {
+    // Buscar a URL do arquivo no banco antes de excluir para limpar do storage
+    const { data: fileData } = await supabase
+      .from('ai_knowledge_files')
+      .select('url')
+      .eq('id', id)
+      .maybeSingle();
+
+    let oldFilePath: string | null = null;
+    if (fileData && fileData.url && fileData.url !== '#') {
+      const match = fileData.url.match(/\/ai-knowledge\/(.+)$/);
+      if (match && match[1]) {
+        oldFilePath = decodeURIComponent(match[1]);
+      }
+    }
+
     const { error } = await supabase
       .from('ai_knowledge_files')
       .delete()
       .eq('id', id);
+
     if (error) {
       handleError('Remover Arquivo da IA', error);
       throw error;
     }
+
+    if (oldFilePath) {
+      await supabase.storage.from('ai-knowledge').remove([oldFilePath]);
+    }
+
     if (user) await loadData(user.id, user.role);
   };
 
