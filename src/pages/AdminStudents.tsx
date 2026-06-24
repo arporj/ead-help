@@ -444,33 +444,57 @@ export const AdminStudents: React.FC = () => {
                           >
                             Todas as Disciplinas
                           </li>
-                          {subjects
-                            .filter(sub => {
+                          {(() => {
+                            const filtered = subjects.filter(sub => {
                               if (subjectCourseFilter !== 'all' && sub.courseId !== subjectCourseFilter) return false;
                               return sub.name.toLowerCase().includes(subjectSearch.toLowerCase());
-                            })
-                            .map(sub => (
-                              <li
-                                key={sub.id}
-                                onClick={() => {
-                                  setSubjectSearch(sub.name);
-                                  setIsModalSubjectDropdownOpen(false);
-                                }}
-                                className={`px-3 py-2 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors text-left w-full ${
-                                  subjectSearch.toLowerCase() === sub.name.toLowerCase()
-                                    ? 'bg-brand-medium text-brand-light font-bold'
-                                    : 'text-gray-300'
-                                }`}
-                              >
-                                {sub.name} (Sem. {sub.semester})
-                              </li>
-                            ))}
-                          {subjects.filter(sub => {
-                            if (subjectCourseFilter !== 'all' && sub.courseId !== subjectCourseFilter) return false;
-                            return sub.name.toLowerCase().includes(subjectSearch.toLowerCase());
-                          }).length === 0 && (
-                            <li className="px-3 py-2 text-gray-500 italic text-left">Nenhuma disciplina encontrada</li>
-                          )}
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <li className="px-3 py-2 text-gray-550 italic text-left">Nenhuma disciplina encontrada</li>
+                              );
+                            }
+
+                            const grouped: { [key: number]: typeof subjects } = {};
+                            filtered.forEach(sub => {
+                              const sem = sub.semester || 1;
+                              if (!grouped[sem]) {
+                                grouped[sem] = [];
+                              }
+                              grouped[sem].push(sub);
+                            });
+
+                            const sortedSemesters = Object.keys(grouped)
+                              .map(Number)
+                              .sort((a, b) => a - b);
+
+                            return sortedSemesters.map(sem => (
+                              <div key={sem} className="space-y-0.5">
+                                <div className="px-3 py-1 text-[9px] font-bold text-brand-light bg-brand-medium/20 uppercase tracking-wider select-none text-left">
+                                  Semestre {sem}
+                                </div>
+                                {grouped[sem]
+                                  .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                                  .map(sub => (
+                                    <li
+                                      key={sub.id}
+                                      onClick={() => {
+                                        setSubjectSearch(sub.name);
+                                        setIsModalSubjectDropdownOpen(false);
+                                      }}
+                                      className={`px-4 py-1.5 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors text-left w-full list-none ${
+                                        subjectSearch.toLowerCase() === sub.name.toLowerCase()
+                                          ? 'bg-brand-medium text-brand-light font-bold'
+                                          : 'text-gray-300'
+                                      }`}
+                                    >
+                                      {sub.name}
+                                    </li>
+                                  ))}
+                              </div>
+                            ));
+                          })()}
                         </ul>
                       </>
                     )}
