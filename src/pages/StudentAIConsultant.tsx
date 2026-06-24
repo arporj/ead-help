@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, Send, Sparkles, User, ArrowLeft, Loader2, Shield, Scale, BookOpen, AlertCircle, FileCheck, CheckCircle } from 'lucide-react';
+import { BrainCircuit, Send, Sparkles, User, ArrowLeft, Loader2, Shield, Scale, BookOpen, FileCheck, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 interface ChatMessage {
