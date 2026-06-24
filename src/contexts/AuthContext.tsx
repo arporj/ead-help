@@ -369,7 +369,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: suUser.email || '',
         name: profile.full_name || suUser.email || '',
         role: profile.role as 'admin' | 'student',
-        isSupra
+        isSupra,
+        cpf: profile.cpf || '',
+        phone: profile.phone || ''
       };
 
       setRealUser(appUser);

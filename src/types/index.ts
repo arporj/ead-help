@@ -4,6 +4,8 @@ export interface User {
   name: string;
   role: 'admin' | 'student';
   isSupra?: boolean;
+  cpf?: string;
+  phone?: string;
 }
 
 export interface ExamCycle {
