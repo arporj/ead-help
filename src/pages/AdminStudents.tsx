@@ -41,6 +41,7 @@ export const AdminStudents: React.FC = () => {
   // Sub-filters for subjects in modal
   const [subjectSearch, setSubjectSearch] = useState('');
   const [subjectCourseFilter, setSubjectCourseFilter] = useState('all');
+  const [isModalSubjectDropdownOpen, setIsModalSubjectDropdownOpen] = useState(false);
 
   // Sub-filters for summaries in modal
   const [summarySearch, setSummarySearch] = useState('');
@@ -66,6 +67,7 @@ export const AdminStudents: React.FC = () => {
     // Reset filters
     setSubjectSearch('');
     setSubjectCourseFilter('all');
+    setIsModalSubjectDropdownOpen(false);
     setSummarySearch('');
     setSummaryCourseFilter('all');
   };
@@ -386,21 +388,16 @@ export const AdminStudents: React.FC = () => {
                 </div>
 
                 {/* Filtros de disciplinas */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Filtrar matérias por nome..."
-                      value={subjectSearch}
-                      onChange={(e) => setSubjectSearch(e.target.value)}
-                      className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-8 pr-3 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light"
-                    />
-                  </div>
-                  <div className="w-full sm:w-48">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-light uppercase tracking-wider mb-1">Curso</label>
                     <select
                       value={subjectCourseFilter}
-                      onChange={(e) => setSubjectCourseFilter(e.target.value)}
+                      onChange={(e) => {
+                        setSubjectCourseFilter(e.target.value);
+                        setSubjectSearch('');
+                        setIsModalSubjectDropdownOpen(false);
+                      }}
                       className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light cursor-pointer"
                     >
                       <option value="all">Todos os Cursos</option>
@@ -408,6 +405,75 @@ export const AdminStudents: React.FC = () => {
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
+                  </div>
+                  <div className="relative">
+                    <label className="block text-[10px] font-bold text-brand-light uppercase tracking-wider mb-1">Disciplina</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Selecione ou digite para filtrar..."
+                        value={subjectSearch}
+                        onFocus={() => setIsModalSubjectDropdownOpen(true)}
+                        onChange={(e) => {
+                          setSubjectSearch(e.target.value);
+                          setIsModalSubjectDropdownOpen(true);
+                        }}
+                        className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-2.5 pr-8 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light placeholder:text-gray-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsModalSubjectDropdownOpen(!isModalSubjectDropdownOpen)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <svg className={`w-3.5 h-3.5 transition-transform ${isModalSubjectDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {isModalSubjectDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsModalSubjectDropdownOpen(false)}></div>
+                        <ul className="absolute z-20 w-full mt-1 max-h-40 overflow-y-auto bg-brand-dark border border-brand-medium rounded-lg shadow-xl divide-y divide-brand-medium/30 focus:outline-none text-[11px] py-1.5">
+                          <li
+                            onClick={() => {
+                              setSubjectSearch('');
+                              setIsModalSubjectDropdownOpen(false);
+                            }}
+                            className="px-3 py-2 text-gray-400 hover:bg-brand-medium/30 hover:text-white cursor-pointer transition-colors text-left"
+                          >
+                            Todas as Disciplinas
+                          </li>
+                          {subjects
+                            .filter(sub => {
+                              if (subjectCourseFilter !== 'all' && sub.courseId !== subjectCourseFilter) return false;
+                              return sub.name.toLowerCase().includes(subjectSearch.toLowerCase());
+                            })
+                            .map(sub => (
+                              <li
+                                key={sub.id}
+                                onClick={() => {
+                                  setSubjectSearch(sub.name);
+                                  setIsModalSubjectDropdownOpen(false);
+                                }}
+                                className={`px-3 py-2 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors text-left w-full ${
+                                  subjectSearch.toLowerCase() === sub.name.toLowerCase()
+                                    ? 'bg-brand-medium text-brand-light font-bold'
+                                    : 'text-gray-300'
+                                }`}
+                              >
+                                {sub.name} (Sem. {sub.semester})
+                              </li>
+                            ))}
+                          {subjects.filter(sub => {
+                            if (subjectCourseFilter !== 'all' && sub.courseId !== subjectCourseFilter) return false;
+                            return sub.name.toLowerCase().includes(subjectSearch.toLowerCase());
+                          }).length === 0 && (
+                            <li className="px-3 py-2 text-gray-500 italic text-left">Nenhuma disciplina encontrada</li>
+                          )}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -497,21 +563,15 @@ export const AdminStudents: React.FC = () => {
                 </div>
 
                 {/* Filtros de resumos */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Filtrar resumos premium por nome..."
-                      value={summarySearch}
-                      onChange={(e) => setSummarySearch(e.target.value)}
-                      className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-8 pr-3 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light"
-                    />
-                  </div>
-                  <div className="w-full sm:w-48">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-light uppercase tracking-wider mb-1">Curso</label>
                     <select
                       value={summaryCourseFilter}
-                      onChange={(e) => setSummaryCourseFilter(e.target.value)}
+                      onChange={(e) => {
+                        setSummaryCourseFilter(e.target.value);
+                        setSummarySearch('');
+                      }}
                       className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light cursor-pointer"
                     >
                       <option value="all">Todos os Cursos</option>
@@ -519,6 +579,19 @@ export const AdminStudents: React.FC = () => {
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
+                  </div>
+                  <div className="relative">
+                    <label className="block text-[10px] font-bold text-brand-light uppercase tracking-wider mb-1">Resumo Premium</label>
+                    <div className="relative">
+                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Filtrar resumos premium por nome..."
+                        value={summarySearch}
+                        onChange={(e) => setSummarySearch(e.target.value)}
+                        className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl pl-8 pr-3 py-1.5 text-[11px] text-white focus:outline-none focus:border-brand-light"
+                      />
+                    </div>
                   </div>
                 </div>
 
