@@ -358,20 +358,42 @@ export const AdminQuestions: React.FC = () => {
                           );
                         }
 
-                        return searchedSubjects.map(sub => (
-                          <button
-                            key={sub.id}
-                            type="button"
-                            onClick={() => {
-                              setSubjectId(sub.id);
-                              setIsFormSubjectDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
-                              subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
-                            }`}
-                          >
-                            {sub.name}
-                          </button>
+                        const grouped: { [key: number]: typeof subjects } = {};
+                        searchedSubjects.forEach(sub => {
+                          const sem = sub.semester || 1;
+                          if (!grouped[sem]) {
+                            grouped[sem] = [];
+                          }
+                          grouped[sem].push(sub);
+                        });
+
+                        const sortedSemesters = Object.keys(grouped)
+                          .map(Number)
+                          .sort((a, b) => a - b);
+
+                        return sortedSemesters.map(sem => (
+                          <div key={sem} className="space-y-0.5">
+                            <div className="px-3 py-1 text-[9px] font-bold text-brand-light bg-brand-medium/20 uppercase tracking-wider select-none text-left">
+                              Semestre {sem}
+                            </div>
+                            {grouped[sem]
+                              .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                              .map(sub => (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSubjectId(sub.id);
+                                    setIsFormSubjectDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-1.5 hover:bg-brand-medium/40 transition-colors ${
+                                    subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
+                                  }`}
+                                >
+                                  {sub.name}
+                                </button>
+                              ))}
+                          </div>
                         ));
                       })()}
                     </div>
@@ -553,31 +575,53 @@ export const AdminQuestions: React.FC = () => {
 
                       if (searchedSubjects.length === 0) {
                         return (
-                          <div className="px-3 py-2 text-gray-500 italic">
+                          <div className="px-3 py-2 text-gray-500 italic text-left">
                             Nenhuma disciplina encontrada
                           </div>
                         );
                       }
 
-                      return searchedSubjects.map(sub => {
-                        const course = courses.find(c => c.id === sub.courseId);
-                        return (
-                          <button
-                            key={sub.id}
-                            type="button"
-                            onClick={() => {
-                              setFilterSubjectId(sub.id);
-                              setIsFilterSubjectDropdownOpen(false);
-                              setFilterSubjectSearchText('');
-                            }}
-                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
-                              filterSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
-                            }`}
-                          >
-                            {filterCourseId === 'all' && course ? `${course.name.substring(0, 10)}... - ` : ''}{sub.name}
-                          </button>
-                        );
+                      const grouped: { [key: number]: typeof subjects } = {};
+                      searchedSubjects.forEach(sub => {
+                        const sem = sub.semester || 1;
+                        if (!grouped[sem]) {
+                          grouped[sem] = [];
+                        }
+                        grouped[sem].push(sub);
                       });
+
+                      const sortedSemesters = Object.keys(grouped)
+                        .map(Number)
+                        .sort((a, b) => a - b);
+
+                      return sortedSemesters.map(sem => (
+                        <div key={sem} className="space-y-0.5">
+                          <div className="px-3 py-1 text-[9px] font-bold text-brand-light bg-brand-medium/20 uppercase tracking-wider select-none text-left">
+                            Semestre {sem}
+                          </div>
+                          {grouped[sem]
+                            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                            .map(sub => {
+                              const course = courses.find(c => c.id === sub.courseId);
+                              return (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFilterSubjectId(sub.id);
+                                    setIsFilterSubjectDropdownOpen(false);
+                                    setFilterSubjectSearchText('');
+                                  }}
+                                  className={`w-full text-left px-4 py-1.5 hover:bg-brand-medium/40 transition-colors ${
+                                    filterSubjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
+                                  }`}
+                                >
+                                  {filterCourseId === 'all' && course ? `${course.name.substring(0, 10)}... - ` : ''}{sub.name}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      ));
                     })()}
                   </div>
                 </>

@@ -335,8 +335,7 @@ export const AdminContent: React.FC = () => {
                         setFormSubjectSearchText('');
                       }}
                     />
-                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text-xs py-1.5">
-                      {(() => {
+                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-brand-dark border border-brand-medium rounded-xl shadow-2xl z-20 text                      {(() => {
                         const courseSubjects = sortedSubjects.filter(s => s.courseId === formCourseId);
                         const searchedSubjects = courseSubjects.filter(sub => 
                           sub.name.toLowerCase().includes(formSubjectSearchText.toLowerCase())
@@ -344,28 +343,50 @@ export const AdminContent: React.FC = () => {
 
                         if (searchedSubjects.length === 0) {
                           return (
-                            <div className="px-3 py-2 text-gray-500 italic">
+                            <div className="px-3 py-2 text-gray-550 italic">
                               Nenhuma disciplina encontrada
                             </div>
                           );
                         }
 
-                        return searchedSubjects.map(sub => (
-                          <button
-                            key={sub.id}
-                            type="button"
-                            onClick={() => {
-                              setSubjectId(sub.id);
-                              setIsFormSubjectDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 hover:bg-brand-medium/40 transition-colors ${
-                              subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-305'
-                            }`}
-                          >
-                            {sub.name} (Sem. {sub.semester})
-                          </button>
+                        const grouped: { [key: number]: typeof subjects } = {};
+                        searchedSubjects.forEach(sub => {
+                          const sem = sub.semester || 1;
+                          if (!grouped[sem]) {
+                            grouped[sem] = [];
+                          }
+                          grouped[sem].push(sub);
+                        });
+
+                        const sortedSemesters = Object.keys(grouped)
+                          .map(Number)
+                          .sort((a, b) => a - b);
+
+                        return sortedSemesters.map(sem => (
+                          <div key={sem} className="space-y-0.5">
+                            <div className="px-3 py-1 text-[9px] font-bold text-brand-light bg-brand-medium/20 uppercase tracking-wider select-none text-left">
+                              Semestre {sem}
+                            </div>
+                            {grouped[sem]
+                              .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                              .map(sub => (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSubjectId(sub.id);
+                                    setIsFormSubjectDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-1.5 hover:bg-brand-medium/40 transition-colors ${
+                                    subjectId === sub.id ? 'bg-brand-medium/60 text-white font-bold' : 'text-gray-300'
+                                  }`}
+                                >
+                                  {sub.name}
+                                </button>
+                              ))}
+                          </div>
                         ));
-                      })()}
+                      })()}        })()}
                     </div>
                   </>
                 )}
@@ -551,26 +572,56 @@ export const AdminContent: React.FC = () => {
                         >
                           Todas as Disciplinas
                         </li>
-                        {availableSubjectsForFilter
-                          .filter(sub => 
+                        {(() => {
+                          const searched = availableSubjectsForFilter.filter(sub => 
                             sub.name.toLowerCase().includes(filterSubjectName.toLowerCase())
-                          )
-                          .map(sub => (
-                            <li
-                              key={sub.id}
-                              onClick={() => {
-                                setFilterSubjectName(sub.name);
-                                setIsFilterDropdownOpen(false);
-                              }}
-                              className={`px-3 py-2 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors ${
-                                filterSubjectName.toLowerCase() === sub.name.toLowerCase() 
-                                  ? 'bg-brand-medium text-brand-light font-bold' 
-                                  : 'text-gray-305'
-                              }`}
-                            >
-                              {sub.name}
-                            </li>
-                          ))}
+                          );
+
+                          if (searched.length === 0) {
+                            return (
+                              <li className="px-3 py-2 text-gray-550 italic">Nenhuma disciplina encontrada</li>
+                            );
+                          }
+
+                          const grouped: { [key: number]: typeof subjects } = {};
+                          searched.forEach(sub => {
+                            const sem = sub.semester || 1;
+                            if (!grouped[sem]) {
+                              grouped[sem] = [];
+                            }
+                            grouped[sem].push(sub);
+                          });
+
+                          const sortedSemesters = Object.keys(grouped)
+                            .map(Number)
+                            .sort((a, b) => a - b);
+
+                          return sortedSemesters.map(sem => (
+                            <div key={sem} className="space-y-0.5">
+                              <div className="px-3 py-1 text-[9px] font-bold text-brand-light bg-brand-medium/20 uppercase tracking-wider select-none text-left">
+                                Semestre {sem}
+                              </div>
+                              {grouped[sem]
+                                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                                .map(sub => (
+                                  <li
+                                    key={sub.id}
+                                    onClick={() => {
+                                      setFilterSubjectName(sub.name);
+                                      setIsFilterDropdownOpen(false);
+                                    }}
+                                    className={`px-4 py-1.5 hover:bg-brand-medium/40 hover:text-white cursor-pointer transition-colors text-left w-full list-none ${
+                                      filterSubjectName.toLowerCase() === sub.name.toLowerCase() 
+                                        ? 'bg-brand-medium text-brand-light font-bold' 
+                                        : 'text-gray-300'
+                                    }`}
+                                  >
+                                    {sub.name}
+                                  </li>
+                                ))}
+                            </div>
+                          ));
+                        })()}
                         {availableSubjectsForFilter.filter(sub => 
                           sub.name.toLowerCase().includes(filterSubjectName.toLowerCase())
                         ).length === 0 && (
