@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, Check, Eye, EyeOff } from 'lucide-react';
+import { BrainCircuit, ShieldAlert, ArrowRight, User, Lock, Mail, CheckCircle, Check, Eye, EyeOff, Phone, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export const Login: React.FC = () => {
@@ -28,7 +28,33 @@ export const Login: React.FC = () => {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpFullName, setSignUpFullName] = useState('');
+  const [signUpCpf, setSignUpCpf] = useState('');
+  const [signUpPhone, setSignUpPhone] = useState('');
   const [signUpShowPassword, setSignUpShowPassword] = useState(false);
+
+  // Máscaras de Digitação
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 10) {
+      return numbers
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{4})(\d)/, '$1-$2')
+        .replace(/(-\d{4})\d+?$/, '$1');
+    }
+    return numbers
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{4})\d+?$/, '$1');
+  };
 
   // Common Feedback States
   const [error, setError] = useState('');
@@ -86,8 +112,20 @@ export const Login: React.FC = () => {
     setError('');
     setSuccessMessage('');
 
-    if (!signUpEmail || !signUpPassword || !signUpFullName) {
+    if (!signUpEmail || !signUpPassword || !signUpFullName || !signUpCpf || !signUpPhone) {
       setError('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    const cleanCpf = signUpCpf.replace(/\D/g, '');
+    if (cleanCpf.length !== 11) {
+      setError('Por favor, digite um CPF válido com 11 dígitos.');
+      return;
+    }
+
+    const cleanPhone = signUpPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      setError('Por favor, digite um telefone válido com DDD (ex: (11) 99999-9999).');
       return;
     }
 
@@ -104,6 +142,8 @@ export const Login: React.FC = () => {
         options: {
           data: {
             full_name: signUpFullName.trim(),
+            cpf: cleanCpf,
+            phone: cleanPhone
           }
         }
       });
@@ -113,6 +153,8 @@ export const Login: React.FC = () => {
       setSuccessMessage('Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Por favor, verifique a sua caixa de entrada e clique no link para ativar sua conta e entrar no sistema.');
       setSignUpEmail('');
       setSignUpFullName('');
+      setSignUpCpf('');
+      setSignUpPhone('');
       setSignUpPassword('');
     } catch (err: any) {
       const errMsg = err.message || '';
@@ -272,12 +314,45 @@ export const Login: React.FC = () => {
               </label>
               <input 
                 type="text"
+                required
                 disabled={loading}
                 placeholder="Ex: João da Silva"
                 value={signUpFullName}
                 onChange={(e) => { setSignUpFullName(e.target.value); setError(''); }}
-                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-500 disabled:opacity-50"
+                className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <CreditCard size={13} /> CPF
+                </label>
+                <input 
+                  type="text"
+                  required
+                  disabled={loading}
+                  placeholder="000.000.000-00"
+                  value={signUpCpf}
+                  onChange={(e) => { setSignUpCpf(formatCPF(e.target.value)); setError(''); }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-light uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Phone size={13} /> Telefone
+                </label>
+                <input 
+                  type="text"
+                  required
+                  disabled={loading}
+                  placeholder="(00) 00000-0000"
+                  value={signUpPhone}
+                  onChange={(e) => { setSignUpPhone(formatPhone(e.target.value)); setError(''); }}
+                  className="w-full bg-brand-dark border border-brand-medium/60 rounded-xl px-4 py-3 text-sm focus:border-brand-light focus:outline-none transition-all placeholder:text-gray-550 disabled:opacity-50"
+                />
+              </div>
             </div>
 
             <div>
@@ -286,6 +361,7 @@ export const Login: React.FC = () => {
               </label>
               <input 
                 type="email"
+                required
                 disabled={loading}
                 placeholder="seuemail@exemplo.com"
                 value={signUpEmail}
