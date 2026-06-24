@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, Download, BookOpen, Search, Check, RefreshCw } from 'lucide-react';
+import { FileText, Lock, CheckCircle2, ChevronRight, CornerUpLeft, BookOpen, Search, Check, RefreshCw } from 'lucide-react';
 import type { Summary } from '../types';
+import { SecurePDFViewer } from '../components/SecurePDFViewer';
 
 export const StudentDashboard: React.FC = () => {
   const { studentProfile, summaries, subjects, courses, saveStudentSubjects, plansConfig } = useAuth();
@@ -254,18 +255,6 @@ export const StudentDashboard: React.FC = () => {
             >
               <CornerUpLeft size={16} /> Voltar aos Resumos
             </button>
-            
-            {readingSummary.pdfUrl && readingSummary.pdfUrl !== '#' && (
-              <a
-                href={readingSummary.pdfUrl}
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs bg-brand-light hover:bg-white text-brand-dark px-3 py-1.5 rounded-lg font-bold transition-all"
-              >
-                <Download size={14} /> Baixar PDF
-              </a>
-            )}
           </div>
           
           <div className="pb-3 border-b border-brand-medium/40">
@@ -276,16 +265,15 @@ export const StudentDashboard: React.FC = () => {
             <p className="text-xs text-gray-400 mt-1">{readingSummary.description}</p>
           </div>
 
-          {/* Document pages content (Real PDF Viewer) */}
-          <div className="bg-brand-dark/50 border border-brand-medium/30 rounded-xl overflow-hidden shadow-inner h-[550px] relative">
+          {/* Document pages content (Secure PDF Viewer) */}
+          <div className="overflow-hidden h-[600px] relative">
             {readingSummary.pdfUrl && readingSummary.pdfUrl !== '#' ? (
-              <iframe
-                src={`${readingSummary.pdfUrl}#toolbar=0`}
-                className="w-full h-full border-none"
+              <SecurePDFViewer
+                pdfUrl={readingSummary.pdfUrl}
                 title={readingSummary.title}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 text-xs">
+              <div className="flex flex-col items-center justify-center h-full bg-brand-dark/50 border border-brand-medium/30 rounded-xl text-gray-400 space-y-2 text-xs">
                 <FileText size={48} className="text-brand-light/40 animate-pulse" />
                 <p>Nenhum arquivo PDF associado a este resumo.</p>
               </div>
