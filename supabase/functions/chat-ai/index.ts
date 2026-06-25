@@ -1,11 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { GoogleGenAI } from "npm:@google/genai"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Lista de modelos para tentar em ordem de preferência
+const MODELS_TO_TRY = [
+  "gemini-3.5-flash",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+]
 
 serve(async (req) => {
   // Tratar requisição OPTIONS (CORS)
@@ -23,7 +29,6 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-    const ai = new GoogleGenAI({ apiKey: geminiApiKey })
 
     // Obter payload
     const { conversationId, message, discipline } = await req.json()
@@ -52,22 +57,28 @@ serve(async (req) => {
     // 2. RAG - Buscar base de conhecimento relevante
     let ragContext = "";
     try {
-      // 2a. Gerar embedding usando o novo SDK @google/genai
-      const embeddingRes = await ai.models.embedContent({
-        model: "text-embedding-004",
-        contents: message,
-      });
+      // 2a. Gerar embedding da pergunta do aluno via API REST direta
+      const embeddingRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: "models/text-embedding-004",
+            content: { parts: [{ text: message }] }
+          })
+        }
+      )
 
-      const embeddingVector = embeddingRes.embedding?.values || 
-                              embeddingRes.embeddings?.[0]?.values || 
-                              (embeddingRes as any).values;
+      if (embeddingRes.ok) {
+        const embeddingData = await embeddingRes.json()
+        const embeddingVector = embeddingData.embedding.values
 
-      if (embeddingVector && Array.isArray(embeddingVector)) {
         // 2b. Chamar a RPC match_knowledge_chunks para encontrar fragmentos relacionados a essa disciplina
         const { data: matchData, error: matchError } = await supabase.rpc('match_knowledge_chunks', {
           query_embedding: embeddingVector,
-          match_threshold: 0.35, // Limiar de relevância
-          match_count: 5,        // Top 5 chunks mais relevantes
+          match_threshold: 0.35,
+          match_count: 5,
           filter_discipline: discipline
         });
 
@@ -79,7 +90,6 @@ serve(async (req) => {
       }
     } catch (ragErr) {
       console.error('Erro ao rodar busca vetorial (RAG):', ragErr);
-      // O RAG falhar não impede a IA de responder com sua base interna
     }
 
     // 3. Buscar histórico de conversas do banco para injetar no Gemini
@@ -88,7 +98,7 @@ serve(async (req) => {
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
-      .limit(20); // Limitar a 20 mensagens recentes de contexto de chat
+      .limit(20);
 
     const contents = (historyData || []).map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'model',
@@ -136,64 +146,110 @@ ${ragContext || "Nenhum arquivo de contexto específico indexado no RAG para est
 Responda sempre em Português do Brasil de forma didática, formal e encorajadora. Use formatação Markdown elegante.
 `;
 
-    // 5. Chamar a API de Chat do Gemini com suporte a Streaming usando o novo SDK @google/genai (gemini-3.5-flash)
-    let stream;
-    let retries = 3;
-    let delay = 1000;
+    // 5. Chamar a API de Chat do Gemini com Streaming via REST (fallback de modelos)
+    let response: Response | null = null;
+    let usedModel = "";
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        stream = await ai.models.generateContentStream({
-          model: "gemini-3.5-flash",
-          contents: contents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.3, // Menos alucinação e maior foco nas diretrizes
-            topP: 0.95,
-            maxOutputTokens: 2048
-          }
+    for (const modelName of MODELS_TO_TRY) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?key=${geminiApiKey}`;
+      
+      let retries = 2;
+      let delay = 1500;
+
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: contents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            generationConfig: {
+              temperature: 0.3,
+              topP: 0.95,
+              maxOutputTokens: 2048
+            }
+          })
         });
-        break;
-      } catch (err: any) {
-        if ((err.message?.includes('503') || err.message?.includes('429')) && attempt < retries) {
-          console.warn(`API do Gemini indisponível (Tentativa ${attempt} de ${retries}). Aguardando ${delay}ms...`);
+
+        if (res.ok) {
+          response = res;
+          usedModel = modelName;
+          break;
+        }
+
+        const status = res.status;
+
+        // Se o modelo não existe (404), pular para o próximo modelo imediatamente
+        if (status === 404) {
+          console.warn(`Modelo ${modelName} não encontrado (404). Tentando o próximo modelo...`);
+          break;
+        }
+
+        // Se é instabilidade temporária (503/429), tentar novamente
+        if ((status === 503 || status === 429) && attempt < retries) {
+          console.warn(`API do Gemini indisponível para ${modelName} (Status ${status}). Tentativa ${attempt}/${retries}. Aguardando ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           delay *= 2;
-        } else {
-          throw err;
+          continue;
         }
+
+        // Qualquer outro erro irreversível neste modelo
+        const errorText = await res.text();
+        console.error(`Erro no modelo ${modelName} (Status ${status}): ${errorText}`);
+        break;
       }
+
+      if (response) break;
     }
 
-    if (!stream) {
-      throw new Error("Erro na comunicação com a API do Gemini após várias retentativas.");
+    if (!response || !response.ok) {
+      throw new Error(`Nenhum modelo de IA disponível respondeu com sucesso. Modelos testados: ${MODELS_TO_TRY.join(', ')}.`);
     }
 
-    // 6. Criar TransformStream para retornar os chunks compatíveis com o parser do frontend
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
+    console.log(`Modelo de IA utilizado com sucesso: ${usedModel}`);
 
-    // Ler e processar o stream de forma assíncrona para não travar a requisição
+    // 6. Dividir o stream do corpo da resposta do Gemini usando .tee()
+    const [clientStream, serverStream] = response.body!.tee();
+
+    // Ler e acumular o texto da IA no servidor de forma assíncrona para salvar no banco
     (async () => {
       try {
+        const reader = serverStream.getReader();
+        const decoder = new TextDecoder();
         let accumulatedText = "";
-        for await (const chunk of stream) {
-          const textPart = chunk.text || "";
-          accumulatedText += textPart;
 
-          // Formatar o chunk no mesmo formato JSON esperado pelo frontend (compatibilidade com a API clássica)
-          const jsonChunk = JSON.stringify({
-            candidates: [{
-              content: {
-                parts: [{ text: textPart }]
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          try {
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.trim().startsWith('{') || line.trim().startsWith(',')) {
+                const cleanedLine = line.trim().replace(/^,/, '');
+                try {
+                  const parsed = JSON.parse(cleanedLine);
+                  const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (textPart) {
+                    accumulatedText += textPart;
+                  }
+                } catch (_) { /* Chunk JSON incompleto, ignorar */ }
               }
-            }]
-          });
-          await writer.write(encoder.encode(jsonChunk + "\n"));
+            }
+          } catch (_) {
+            const match = chunk.match(/"text"\s*:\s*"([^"]+)"/g);
+            if (match) {
+              match.forEach(m => {
+                const txt = m.replace(/"text"\s*:\s*"/, '').replace(/"$/, '');
+                accumulatedText += txt.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+              });
+            }
+          }
         }
 
-        // Se o acumulador gerou texto, salvar como mensagem do assistente no banco
         if (accumulatedText.trim()) {
           const { error: insertAiMsgErr } = await supabase
             .from('ai_messages')
@@ -208,14 +264,12 @@ Responda sempre em Português do Brasil de forma didática, formal e encorajador
           }
         }
       } catch (err) {
-        console.error("Erro no processamento do stream de resposta:", err);
-      } finally {
-        await writer.close();
+        console.error('Falha ao processar e salvar stream da IA no servidor:', err);
       }
     })();
 
-    // Retornar o stream compatível de volta para o cliente de forma assíncrona
-    return new Response(readable, {
+    // Retornar o stream original de volta para o cliente de forma assíncrona
+    return new Response(clientStream, {
       status: 200,
       headers: {
         ...corsHeaders,
