@@ -228,7 +228,21 @@ export const StudentAIConsultant: React.FC = () => {
       console.error('Erro no chat streaming:', err);
       // Remover a bolha vazia em caso de erro e exibir mensagem amigável
       setMessages(prev => prev.filter(m => m.id !== aiMsgId));
-      alert(`Erro na comunicação com a IA: ${err.message || 'Verifique sua conexão.'}`);
+      
+      const errMsg = err.message || '';
+      let userFriendlyMsg = 'Ocorreu um erro na comunicação. Por favor, tente novamente.';
+      
+      if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE') || errMsg.includes('high demand') || errMsg.includes('temporary')) {
+        userFriendlyMsg = 'O servidor da Inteligência Artificial do Google está enfrentando alta demanda temporária neste momento. Aguarde alguns segundos e envie sua mensagem novamente.';
+      } else if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+        userFriendlyMsg = 'O limite de mensagens temporário foi atingido. Por favor, aguarde um minuto antes de enviar sua próxima pergunta.';
+      } else if (errMsg.includes('404') || errMsg.includes('not found')) {
+        userFriendlyMsg = 'O modelo de Inteligência Artificial configurado não foi encontrado ou está indisponível na sua região.';
+      } else if (err.message) {
+        userFriendlyMsg = err.message;
+      }
+      
+      alert(`Erro na comunicação com a IA: ${userFriendlyMsg}`);
     } finally {
       setIsTyping(false);
     }

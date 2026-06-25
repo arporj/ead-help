@@ -140,29 +140,49 @@ ${ragContext || "Nenhum arquivo de contexto específico indexado no RAG para est
 Responda sempre em Português do Brasil de forma didática, formal e encorajadora. Use formatação Markdown elegante.
 `;
 
-    // 5. Chamar a API de Chat do Gemini com suporte a Streaming
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: contents,
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
-            temperature: 0.3, // Menos alucinação e maior foco nas diretrizes
-            topP: 0.95,
-            maxOutputTokens: 2048
-          }
-        })
-      }
-    )
+    // 5. Chamar a API de Chat do Gemini com suporte a Streaming e resiliência (Retries automáticos para 503 e 429)
+    let response: Response | undefined;
+    let retries = 3;
+    let delay = 1000; // Começa com 1 segundo de intervalo
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erro na API do Gemini: ${errorText}`);
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: contents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            generationConfig: {
+              temperature: 0.3, // Menos alucinação e maior foco nas diretrizes
+              topP: 0.95,
+              maxOutputTokens: 2048
+            }
+          })
+        }
+      );
+
+      if (response.ok) {
+        break;
+      }
+
+      // Se for instabilidade temporária (503) ou estouro de cota (429), e houver tentativas restantes, espera e tenta de novo
+      if ((response.status === 503 || response.status === 429) && attempt < retries) {
+        console.warn(`API do Gemini indisponível (Status ${response.status}). Tentativa ${attempt} de ${retries}. Aguardando ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Recuo exponencial: dobra o tempo de espera
+      } else {
+        // Se for outro tipo de erro (ex: 400, 404, etc) ou se as tentativas esgotaram
+        const errorText = await response.text();
+        throw new Error(`Erro na API do Gemini (Status ${response.status}): ${errorText}`);
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error("Erro na comunicação com a API do Gemini após várias tentativas.");
     }
 
     // 6. Dividir o stream do corpo da resposta do Gemini usando .tee()
