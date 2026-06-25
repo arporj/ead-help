@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { extractText, getDocumentProxy } from "npm:unpdf"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,18 +24,81 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
-    // Obter payload da requisição
-    const { fileId, chunks } = await req.json()
+    // Obter payload da requisição (apenas fileId enviado pelo frontend)
+    const { fileId } = await req.json()
 
-    if (!fileId || !chunks || !Array.isArray(chunks)) {
-      return new Response(JSON.stringify({ error: 'Parâmetros fileId e chunks são obrigatórios e chunks deve ser um array.' }), {
+    if (!fileId) {
+      return new Response(JSON.stringify({ error: 'Parâmetro fileId é obrigatório.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
+    // 1. Buscar metadados do arquivo na tabela ai_knowledge_files
+    const { data: fileData, error: dbError } = await supabase
+      .from('ai_knowledge_files')
+      .select('url, name')
+      .eq('id', fileId)
+      .maybeSingle()
+
+    if (dbError || !fileData) {
+      throw new Error(`Arquivo não encontrado no banco de dados ou erro de consulta: ${dbError?.message}`);
+    }
+
+    // 2. Extrair o caminho relativo (filePath) no bucket a partir da URL gravada
+    const fileUrl = fileData.url
+    const match = fileUrl.match(/\/ai-knowledge\/(.+)$/)
+    const filePath = match ? decodeURIComponent(match[1]) : null
+
+    if (!filePath) {
+      throw new Error("Não foi possível extrair o caminho relativo do arquivo no bucket a partir da URL gravada.");
+    }
+
+    // 3. Baixar os bytes do arquivo PDF do bucket privado ai-knowledge
+    const { data: fileBlob, error: downloadError } = await supabase.storage
+      .from('ai-knowledge')
+      .download(filePath)
+
+    if (downloadError || !fileBlob) {
+      throw new Error(`Erro ao baixar o PDF do Storage do Supabase: ${downloadError?.message}`);
+    }
+
+    const arrayBuffer = await fileBlob.arrayBuffer()
+
+    // 4. Extrair texto de todas as páginas do PDF usando a unpdf (wrapper do pdf.js em Deno)
+    let text = ""
+    try {
+      const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer))
+      const extractResult = await extractText(pdf, { mergePages: true })
+      text = extractResult.text || ""
+    } catch (parseErr: any) {
+      console.error(`Erro ao processar PDF com unpdf:`, parseErr)
+      throw new Error(`Falha ao extrair texto do documento PDF: ${parseErr.message}`);
+    }
+
+    if (!text.trim()) {
+      throw new Error("O PDF está vazio ou o texto não pôde ser extraído (documento escaneado/imagem sem OCR).");
+    }
+
+    // 5. Dividir o texto extraído em blocos (chunks) de 1000 caracteres com overlap de 200
+    const chunkSize = 1000
+    const overlap = 200
+    const chunks: string[] = []
+    let cursor = 0
+
+    while (cursor < text.length) {
+      const chunk = text.substring(cursor, cursor + chunkSize).trim()
+      if (chunk) {
+        chunks.push(chunk)
+      }
+      cursor += chunkSize - overlap
+    }
+
+    console.log(`PDF parseado com sucesso. Total de caracteres: ${text.length}. Gerados ${chunks.length} chunks.`);
+
+    // 6. Gerar embedding vetorial (text-embedding-004) e gravar no Postgres para cada chunk
     const headers = { 'Content-Type': 'application/json' }
-    let successfulChunks = 0;
+    let successfulChunks = 0
 
     for (const chunkContent of chunks) {
       if (!chunkContent || !chunkContent.trim()) continue;
@@ -54,8 +118,8 @@ serve(async (req) => {
 
       if (!embeddingRes.ok) {
         const errorText = await embeddingRes.text()
-        console.error(`Erro ao gerar embedding do Gemini para o chunk: ${chunkContent.substring(0, 30)}... Error: ${errorText}`);
-        continue; // Ignorar chunk com falha e processar o restante
+        console.error(`Erro ao gerar embedding do Gemini para o chunk: ${chunkContent.substring(0, 30)}... Error: ${errorText}`)
+        continue // Ignorar chunk com falha e processar o restante
       }
 
       const embeddingData = await embeddingRes.json()
@@ -71,23 +135,23 @@ serve(async (req) => {
         })
 
       if (insertError) {
-        console.error('Erro ao salvar chunk no Supabase:', insertError);
-        throw insertError;
+        console.error('Erro ao salvar chunk no Supabase:', insertError)
+        throw insertError
       }
 
-      successfulChunks++;
+      successfulChunks++
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: `${successfulChunks} de ${chunks.length} chunks indexados com sucesso no pgvector!` 
+      message: `PDF de Conhecimento indexado com sucesso! ${successfulChunks} de ${chunks.length} chunks gravados no pgvector.` 
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error: any) {
-    console.error('Erro geral no processo de ingestão:', error);
+    console.error('Erro geral no processo de ingestão:', error)
     return new Response(JSON.stringify({ error: error.message || 'Erro inesperado de servidor' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
