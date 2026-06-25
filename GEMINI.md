@@ -122,4 +122,6 @@ O projeto é o "Help EAD", um ambiente virtual de aprendizado (LMS) para estudan
 10. **Design e UI:** Sempre que o usuário pedir qualquer coisa sobre "design", use o MCP do Stitch se apropriado.
 11. **Crítica Construtiva e Padrão Ouro:** Sempre que o usuário sugerir uma funcionalidade ou fluxo de acesso/IA, avalie se ela atende às melhores práticas ("Padrão Ouro"). Se a sugestão for ineficiente ou gerar riscos de consistência/vazamento de dados, faça um alerta imediato. Apresente como grandes sistemas LMS e ferramentas SaaS resolvem a questão e dê as duas opções de escolha para o usuário.
 12. **Exibição de Erros:** Sempre que implementar ou modificar funções assíncronas de escrita ou leitura no Supabase ou outras APIs, certifique-se de que os erros sejam capturados corretamente e exibidos de forma clara ao usuário (usando a infraestrutura global de `globalError` do `AuthContext` e o modal de overlay no `Layout.tsx`).
+13. **Modelo de IA:** O usuário deseja utilizar o modelo **Gemini 3.5 Flash** para as integrações e interações com a IA do sistema.
+
 </OUTPUT_INSTRUCTION>
