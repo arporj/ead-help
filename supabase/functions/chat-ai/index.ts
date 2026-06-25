@@ -142,7 +142,7 @@ Responda sempre em Português do Brasil de forma didática, formal e encorajador
 
     // 5. Chamar a API de Chat do Gemini com suporte a Streaming
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
