@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { extractText, getDocumentProxy } from "npm:unpdf"
+import { GoogleGenAI } from "npm:@google/genai"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +24,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey })
 
     // Obter payload da requisição (apenas fileId enviado pelo frontend)
     const { fileId } = await req.json()
@@ -97,33 +99,32 @@ serve(async (req) => {
     console.log(`PDF parseado com sucesso. Total de caracteres: ${text.length}. Gerados ${chunks.length} chunks.`);
 
     // 6. Gerar embedding vetorial (text-embedding-004) e gravar no Postgres para cada chunk
-    const headers = { 'Content-Type': 'application/json' }
     let successfulChunks = 0
 
     for (const chunkContent of chunks) {
       if (!chunkContent || !chunkContent.trim()) continue;
 
-      // Chamar API do Gemini para gerar o vetor de embedding (text-embedding-004)
-      const embeddingRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: "models/text-embedding-004",
-            content: { parts: [{ text: chunkContent.trim() }] }
-          })
-        }
-      )
+      let embeddingVector: number[] | null = null
+      try {
+        // Chamar API do Gemini para gerar o vetor de embedding usando o novo SDK @google/genai
+        const embeddingRes = await ai.models.embedContent({
+          model: "text-embedding-004",
+          contents: chunkContent.trim(),
+        })
 
-      if (!embeddingRes.ok) {
-        const errorText = await embeddingRes.text()
-        console.error(`Erro ao gerar embedding do Gemini para o chunk: ${chunkContent.substring(0, 30)}... Error: ${errorText}`)
+        const vector = embeddingRes.embedding?.values || 
+                       embeddingRes.embeddings?.[0]?.values || 
+                       (embeddingRes as any).values;
+
+        if (vector && Array.isArray(vector)) {
+          embeddingVector = vector
+        } else {
+          throw new Error("Formato de resposta de embedding inválido ou vazio.")
+        }
+      } catch (embedErr: any) {
+        console.error(`Erro ao gerar embedding do Gemini para o chunk: ${chunkContent.substring(0, 30)}... Error:`, embedErr)
         continue // Ignorar chunk com falha e processar o restante
       }
-
-      const embeddingData = await embeddingRes.json()
-      const embeddingVector = embeddingData.embedding.values
 
       // Inserir chunk e seu vetor correspondente no Supabase
       const { error: insertError } = await supabase

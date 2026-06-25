@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { GoogleGenAI } from "npm:@google/genai"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey })
 
     // Obter payload
     const { conversationId, message, discipline } = await req.json()
@@ -50,23 +52,17 @@ serve(async (req) => {
     // 2. RAG - Buscar base de conhecimento relevante
     let ragContext = "";
     try {
-      // 2a. Gerar embedding da pergunta do aluno
-      const embeddingRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: "models/text-embedding-004",
-            content: { parts: [{ text: message }] }
-          })
-        }
-      )
+      // 2a. Gerar embedding usando o novo SDK @google/genai
+      const embeddingRes = await ai.models.embedContent({
+        model: "text-embedding-004",
+        contents: message,
+      });
 
-      if (embeddingRes.ok) {
-        const embeddingData = await embeddingRes.json()
-        const embeddingVector = embeddingData.embedding.values
+      const embeddingVector = embeddingRes.embedding?.values || 
+                              embeddingRes.embeddings?.[0]?.values || 
+                              (embeddingRes as any).values;
 
+      if (embeddingVector && Array.isArray(embeddingVector)) {
         // 2b. Chamar a RPC match_knowledge_chunks para encontrar fragmentos relacionados a essa disciplina
         const { data: matchData, error: matchError } = await supabase.rpc('match_knowledge_chunks', {
           query_embedding: embeddingVector,
@@ -99,7 +95,7 @@ serve(async (req) => {
       parts: [{ text: msg.content }]
     }));
 
-    // Se o histórico estiver vazio ou não incluir a mensagem recém-enviada, adicioná-la manual
+    // Se o histórico estiver vazio ou não incluir a mensagem recém-enviada, adicioná-la manualmente
     if (contents.length === 0 || contents[contents.length - 1].parts[0].text !== message) {
       contents.push({
         role: 'user',
@@ -140,98 +136,61 @@ ${ragContext || "Nenhum arquivo de contexto específico indexado no RAG para est
 Responda sempre em Português do Brasil de forma didática, formal e encorajadora. Use formatação Markdown elegante.
 `;
 
-    // 5. Chamar a API de Chat do Gemini com suporte a Streaming e resiliência (Retries automáticos para 503 e 429)
-    let response: Response | undefined;
+    // 5. Chamar a API de Chat do Gemini com suporte a Streaming usando o novo SDK @google/genai (gemini-3.5-flash)
+    let stream;
     let retries = 3;
-    let delay = 1000; // Começa com 1 segundo de intervalo
+    let delay = 1000;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: contents,
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-              temperature: 0.3, // Menos alucinação e maior foco nas diretrizes
-              topP: 0.95,
-              maxOutputTokens: 2048
-            }
-          })
-        }
-      );
-
-      if (response.ok) {
+      try {
+        stream = await ai.models.generateContentStream({
+          model: "gemini-3.5-flash",
+          contents: contents,
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: 0.3, // Menos alucinação e maior foco nas diretrizes
+            topP: 0.95,
+            maxOutputTokens: 2048
+          }
+        });
         break;
-      }
-
-      // Se for instabilidade temporária (503) ou estouro de cota (429), e houver tentativas restantes, espera e tenta de novo
-      if ((response.status === 503 || response.status === 429) && attempt < retries) {
-        console.warn(`API do Gemini indisponível (Status ${response.status}). Tentativa ${attempt} de ${retries}. Aguardando ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Recuo exponencial: dobra o tempo de espera
-      } else {
-        // Se for outro tipo de erro (ex: 400, 404, etc) ou se as tentativas esgotaram
-        const errorText = await response.text();
-        throw new Error(`Erro na API do Gemini (Status ${response.status}): ${errorText}`);
+      } catch (err: any) {
+        if ((err.message?.includes('503') || err.message?.includes('429')) && attempt < retries) {
+          console.warn(`API do Gemini indisponível (Tentativa ${attempt} de ${retries}). Aguardando ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        } else {
+          throw err;
+        }
       }
     }
 
-    if (!response || !response.ok) {
-      throw new Error("Erro na comunicação com a API do Gemini após várias tentativas.");
+    if (!stream) {
+      throw new Error("Erro na comunicação com a API do Gemini após várias retentativas.");
     }
 
-    // 6. Dividir o stream do corpo da resposta do Gemini usando .tee()
-    // Um stream será devolvido imediatamente para o cliente, o outro será lido e acumulado no servidor
-    const [clientStream, serverStream] = response.body!.tee();
+    // 6. Criar TransformStream para retornar os chunks compatíveis com o parser do frontend
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
 
-    // Ler e acumular o texto da IA no servidor de forma assíncrona para salvar no banco
+    // Ler e processar o stream de forma assíncrona para não travar a requisição
     (async () => {
       try {
-        const reader = serverStream.getReader();
-        const decoder = new TextDecoder();
         let accumulatedText = "";
+        for await (const chunk of stream) {
+          const textPart = chunk.text || "";
+          accumulatedText += textPart;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          // A API do Gemini retorna pedaços em formato JSON. Cada pedaço possui o formato:
-          // [{"candidates": [{"content": {"parts": [{"text": "texto..."}]}}]}]
-          // Deno precisa parsear o JSON para acumular o texto cru
-          try {
-            // Nota: O stream da API do Gemini pode vir em chunks fragmentados ou linhas separadas de JSON
-            // Para simplificar a extração do texto no acumulador, limpamos caracteres indesejados e extraímos os blocos textuais.
-            // Um padrão comum em stream de SSE do Gemini é retornar blocos estruturados.
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.trim().startsWith('{') || line.trim().startsWith(',')) {
-                // Limpar possíveis vírgulas de formatação de array do stream
-                const cleanedLine = line.trim().replace(/^,/, '');
-                const parsed = JSON.parse(cleanedLine);
-                const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (textPart) {
-                  accumulatedText += textPart;
-                }
+          // Formatar o chunk no mesmo formato JSON esperado pelo frontend (compatibilidade com a API clássica)
+          const jsonChunk = JSON.stringify({
+            candidates: [{
+              content: {
+                parts: [{ text: textPart }]
               }
-            }
-          } catch (e) {
-            // Se o chunk não for um JSON completo ainda (devido à fragmentação do buffer), 
-            // podemos tentar capturar por regex ou aguardar o próximo chunk.
-            const match = chunk.match(/"text"\s*:\s*"([^"]+)"/g);
-            if (match) {
-              match.forEach(m => {
-                const txt = m.replace(/"text"\s*:\s*"/, '').replace(/"$/, '');
-                // Desescapar quebras de linha básicas
-                accumulatedText += txt.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-              });
-            }
-          }
+            }]
+          });
+          await writer.write(encoder.encode(jsonChunk + "\n"));
         }
 
         // Se o acumulador gerou texto, salvar como mensagem do assistente no banco
@@ -249,12 +208,14 @@ Responda sempre em Português do Brasil de forma didática, formal e encorajador
           }
         }
       } catch (err) {
-        console.error('Falha ao processar e salvar stream da IA no servidor:', err);
+        console.error("Erro no processamento do stream de resposta:", err);
+      } finally {
+        await writer.close();
       }
     })();
 
-    // Retornar o stream original de volta para o cliente de forma assíncrona
-    return new Response(clientStream, {
+    // Retornar o stream compatível de volta para o cliente de forma assíncrona
+    return new Response(readable, {
       status: 200,
       headers: {
         ...corsHeaders,
