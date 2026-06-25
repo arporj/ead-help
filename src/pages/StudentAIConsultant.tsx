@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, Send, Sparkles, User, ArrowLeft, Loader2, Shield, Scale, BookOpen, FileCheck, ChevronRight } from 'lucide-react';
+import { BrainCircuit, Send, Sparkles, User, ArrowLeft, Loader2, Shield, Scale, BookOpen, FileCheck, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 interface ChatMessage {
@@ -9,6 +9,7 @@ interface ChatMessage {
   sender: 'student' | 'ai';
   text: string;
   timestamp: Date;
+  isError?: boolean;
 }
 
 export const StudentAIConsultant: React.FC = () => {
@@ -242,7 +243,14 @@ export const StudentAIConsultant: React.FC = () => {
         userFriendlyMsg = err.message;
       }
       
-      alert(`Erro na comunicação com a IA: ${userFriendlyMsg}`);
+      // Inserir mensagem de erro estilizada no chat
+      setMessages(prev => [...prev, {
+        id: `err-${Date.now()}`,
+        sender: 'ai',
+        text: userFriendlyMsg,
+        timestamp: new Date(),
+        isError: true
+      }]);
     } finally {
       setIsTyping(false);
     }
@@ -445,11 +453,23 @@ export const StudentAIConsultant: React.FC = () => {
 
           return (
             <div key={msg.id} className={`flex gap-3 max-w-[85%] ${isAI ? 'self-start' : 'self-end flex-row-reverse ml-auto'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 text-xs ${isAI ? 'bg-brand-medium/40 border-brand-medium text-brand-light' : 'bg-brand-light border-brand-light text-brand-dark font-bold'}`}>
-                {isAI ? <BrainCircuit size={16} /> : <User size={16} />}
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 text-xs ${
+                msg.isError
+                  ? 'bg-red-950/40 border-red-500/40 text-red-400 animate-pulse'
+                  : isAI
+                  ? 'bg-brand-medium/40 border-brand-medium text-brand-light'
+                  : 'bg-brand-light border-brand-light text-brand-dark font-bold'
+              }`}>
+                {msg.isError ? <AlertTriangle size={16} /> : isAI ? <BrainCircuit size={16} /> : <User size={16} />}
               </div>
               
-              <div className={`p-4 rounded-2xl text-xs leading-relaxed ${isAI ? 'bg-brand-medium/20 border border-brand-medium/40 text-gray-200 rounded-tl-none' : 'bg-brand-medium text-white rounded-tr-none'}`}>
+              <div className={`p-4 rounded-2xl text-xs leading-relaxed ${
+                msg.isError
+                  ? 'bg-red-950/25 border border-red-500/45 text-red-200 rounded-tl-none shadow-md shadow-red-950/5'
+                  : isAI
+                  ? 'bg-brand-medium/20 border border-brand-medium/40 text-gray-200 rounded-tl-none'
+                  : 'bg-brand-medium text-white rounded-tr-none'
+              }`}>
                 {/* RENDERIZAÇÃO SE FOR UMA REVISÃO DIVIDIDA EM ABAS */}
                 {review.isReview ? (
                   <div className="space-y-4">
